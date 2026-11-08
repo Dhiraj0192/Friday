@@ -13,6 +13,7 @@ import '../models/task_step.dart';
 import 'ai_service.dart';
 import 'app_launcher_service.dart';
 import 'recovery_engine.dart';
+import 'risk_gate.dart';
 import 'screen_automation_service.dart';
 import 'settings_service.dart';
 import 'skill_memory_service.dart';
@@ -21,7 +22,7 @@ import 'voice_service.dart';
 
 enum ExecutorState { idle, running, paused }
 
-/// The heart of PrivateAgent: the observe -> think -> act feedback loop.
+/// The heart of Friday: the observe -> think -> act feedback loop.
 ///
 /// 1. Verifies the accessibility service is enabled.
 /// 2. Tries skill-memory replay (macro) before spending LLM tokens.
@@ -54,6 +55,11 @@ class TaskExecutor extends ChangeNotifier {
   final List<TaskStep> _executedSteps = [];
   final List<String> _runLogLines = [];
   DateTime? _startedAt;
+
+  /// Who asked for the running task (null: Sir on the phone) and the risk
+  /// categories already allowed for it, so Sir is asked once per kind of act.
+  String? _origin;
+  final Set<RiskCategory> _allowed = {};
 
   bool get isRunning => state == ExecutorState.running;
   bool get isPaused => state == ExecutorState.paused;
@@ -285,6 +291,8 @@ class TaskExecutor extends ChangeNotifier {
     _executedSteps.clear();
     _runLogLines.clear();
     _recovery.reset();
+    _origin = origin;
+    _allowed.clear();
     _startedAt = DateTime.now();
     logs.clear();
     _log(ChatMessage.user(goal));
@@ -304,7 +312,18 @@ class TaskExecutor extends ChangeNotifier {
         return status;
       }
 
-      // 2. Skill memory fast path.
+      // 2. Risk gate for the goal itself. Sir's own command is his yes to what
+      // it names; a request from anyone else asks him first.
+      final goalRisk = RiskGate.classifyGoal(goal);
+      if (goalRisk != null) {
+        if (origin == null) {
+          _allowed.add(goalRisk);
+        } else {
+          await _requireYes(goalRisk, goal);
+        }
+      }
+
+      // 3. Skill memory fast path.
       if (settings.skillsEnabled) {
         final skill = await _skills.findMatch(goal);
         if (skill != null) {
@@ -332,8 +351,12 @@ class TaskExecutor extends ChangeNotifier {
         }
       }
 
-      // 3. AI loop.
+      // 4. AI loop.
       status = await _aiLoop(goal, settings);
+      return status;
+    } on RiskDeclined catch (e) {
+      _log(ChatMessage.system('Declined by Sir: would ${e.category.describe}.'));
+      status = TaskStatus.declined;
       return status;
     } catch (e) {
       _log(ChatMessage.error('Execution error: $e'));
@@ -473,6 +496,13 @@ class TaskExecutor extends ChangeNotifier {
   // ------------------------------------------------------------------
 
   Future<bool> _performAction(TaskStep step, List<ScreenNode> nodes) async {
+    final risk = RiskGate.classifyStep(step, nodes);
+    if (risk != null &&
+        await _requireYes(risk, step.stringParam('text') ?? '${step.action} ${_briefParams(step)}')) {
+      // The question covered the screen; act on what is there now.
+      await Future<void>.delayed(_afterApprovalSettle);
+      nodes = await _automation.dumpScreen();
+    }
     try {
       switch (step.action) {
         case TaskStep.actionClickText:
@@ -599,6 +629,25 @@ class TaskExecutor extends ChangeNotifier {
     );
   }
 
+  /// Returns when Sir allows [category] for this task (true if he was asked
+  /// just now); throws [RiskDeclined] otherwise. Sir's own tasks skip the
+  /// question when he turned "confirm risky actions" off; requests from others
+  /// always ask.
+  Future<bool> _requireYes(RiskCategory category, String what) async {
+    if (_allowed.contains(category)) return false;
+    if (_origin == null && !SettingsService.instance.confirmRiskyActions) return false;
+    _log(ChatMessage.system('Waiting for Sir: this would ${category.describe}.'));
+    final yes = await RiskGate.approve(
+      RiskRequest(category: category, what: what, origin: _origin),
+    );
+    if (!yes) throw RiskDeclined(category);
+    _allowed.add(category);
+    return true;
+  }
+
+  /// Time for the driven app to return to front after the approval dialog.
+  static const _afterApprovalSettle = Duration(milliseconds: 900);
+
   // ------------------------------------------------------------------
   // Finalization
   // ------------------------------------------------------------------
@@ -625,6 +674,7 @@ class TaskExecutor extends ChangeNotifier {
     final summary = switch (status) {
       TaskStatus.success => 'Task completed in $step step(s).',
       TaskStatus.cancelled => 'Task cancelled after $step step(s).',
+      TaskStatus.declined => 'Task stopped: Sir declined it.',
       TaskStatus.failed => 'Task failed after $step step(s).',
     };
     _log(ChatMessage.system(summary));
@@ -643,8 +693,15 @@ class TaskExecutor extends ChangeNotifier {
 
     state = ExecutorState.idle;
     currentGoal = null;
+    _origin = null;
     _cancelRequested = false;
     notifyListeners();
     _broadcastOverlay();
   }
+}
+
+/// Sir said no (or nobody could ask him) to an act a task needed.
+class RiskDeclined implements Exception {
+  const RiskDeclined(this.category);
+  final RiskCategory category;
 }

@@ -1,7 +1,8 @@
 import 'package:uuid/uuid.dart';
 
 /// Final outcome of a task run.
-enum TaskStatus { success, failed, cancelled }
+/// [declined]: Sir said no to an act the task needed (send, pay, delete, ...).
+enum TaskStatus { success, failed, cancelled, declined }
 
 /// A persisted record of one executed task (shown in the history screen).
 class TaskHistoryEntry {

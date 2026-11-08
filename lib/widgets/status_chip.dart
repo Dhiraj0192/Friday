@@ -36,6 +36,12 @@ class StatusChip extends StatelessWidget {
           color: AppTheme.warning,
           icon: Icons.stop_circle_outlined,
         ),
+      TaskStatus.declined => StatusChip(
+          key: key,
+          label: 'Declined',
+          color: AppTheme.warning,
+          icon: Icons.block_outlined,
+        ),
     };
   }
 

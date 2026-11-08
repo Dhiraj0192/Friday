@@ -43,7 +43,6 @@ import 'polyglot_diplomat_service.dart';
 import 'proactive_agent_service.dart';
 import 'routine_automation_service.dart';
 import 'screen_automation_service.dart';
-import 'security_alert_service.dart';
 import 'sentry_service.dart';
 import 'settings_service.dart';
 import 'skill_memory_service.dart';
@@ -2813,21 +2812,8 @@ Mastering the boundless road.
       case JarvisIntentType.action:
         final goal = intent.actionGoal ?? trimmed;
 
-        // Foundation: Permission system check before risky actions
-        if (SettingsService.instance.confirmRiskyActions) {
-          final assessment = SecurityAlertService.instance.evaluateActionRisk(goal);
-          if (assessment.requiresConfirmation) {
-            final confirmPrompt = 'Sir, this action involves high-risk operations: ${assessment.reason}. Do you confirm execution?';
-            _lastJarvisSpeech = confirmPrompt;
-            _phase = JarvisPhase.speaking;
-            _statusMessage = 'CONFIRMATION REQUIRED // HIGH RISK';
-            notifyListeners();
-            await _voice.speak(confirmPrompt);
-            await SecurityAlertService.instance.dispatchSecurityAlert('High-risk operation prompted: $goal');
-            return;
-          }
-        }
-
+        // Risky acts (send, call, pay, delete, ...) are asked on screen by the
+        // executor's RiskGate, at the step that would do them.
         _currentTaskGoal = goal;
         final ack = intent.spoken.isNotEmpty
             ? intent.spoken
@@ -2853,6 +2839,12 @@ Mastering the boundless road.
           _statusMessage = 'PROTOCOL FINISHED // SUCCESS';
           notifyListeners();
           await _voice.speak(successSpeech);
+        } else if (status == TaskStatus.declined) {
+          const declinedSpeech = 'Understood, Sir. I have left it undone.';
+          _lastJarvisSpeech = declinedSpeech;
+          _statusMessage = 'DECLINED BY SIR';
+          notifyListeners();
+          await _voice.speak(declinedSpeech);
         } else if (status == TaskStatus.cancelled) {
           const cancelledSpeech = 'The task was cancelled, sir. What would you like me to do instead?';
           _lastJarvisSpeech = cancelledSpeech;

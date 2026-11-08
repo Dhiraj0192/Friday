@@ -39,6 +39,12 @@ class ScreenAutomationService {
   Future<void> openAppInfoSettings() =>
       _channel.invokeMethod<void>('openAppInfoSettings');
 
+  /// Brings Friday over whatever app is in front (to ask Sir something).
+  Future<void> bringToFront() => _channel.invokeMethod<void>('bringToFront');
+
+  /// Sends Friday behind the app that was in front before [bringToFront].
+  Future<void> moveToBack() => _channel.invokeMethod<void>('moveToBack');
+
   Future<Size> getScreenSize() async {
     final map = await _channel
         .invokeMapMethod<String, dynamic>('getScreenSize');

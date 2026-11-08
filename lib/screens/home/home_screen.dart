@@ -468,6 +468,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         Icons.stop_circle_outlined,
         theme.colorScheme.onSurfaceVariant,
       ),
+      TaskStatus.declined => (Icons.block_outlined, theme.colorScheme.onSurfaceVariant),
     };
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),

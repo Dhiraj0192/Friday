@@ -14,6 +14,7 @@ import 'services/sentry_service.dart';
 import 'services/settings_service.dart';
 import 'services/task_executor.dart';
 import 'services/todo_service.dart';
+import 'services/risk_approval.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ Future<void> main() async {
 
   final executor = TaskExecutor.instance;
   await executor.init();
+  RiskApproval.install();
 
   await HermesEvolutionService.instance.init();
   await CalendarReminderService.instance.init();

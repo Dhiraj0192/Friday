@@ -30,7 +30,6 @@ import 'package:private_agent/services/phone_storage_service.dart';
 import 'package:private_agent/services/polyglot_diplomat_service.dart';
 import 'package:private_agent/services/proactive_agent_service.dart';
 import 'package:private_agent/services/routine_automation_service.dart';
-import 'package:private_agent/services/security_alert_service.dart';
 import 'package:private_agent/services/sentry_service.dart';
 import 'package:private_agent/services/settings_service.dart';
 import 'package:private_agent/services/smart_home_service.dart';
@@ -198,23 +197,6 @@ void main() {
 
       final evening = await routines.executeEveningRoutine();
       expect(evening, contains('Night Protocol'));
-    });
-  });
-
-  group('Feature 8: Security Monitoring & Risk Assessment', () {
-    test('Assesses low, medium, and high risk actions correctly', () {
-      final security = SecurityAlertService.instance;
-
-      final lowRisk = security.evaluateActionRisk('Check the weather in London');
-      expect(lowRisk.riskLevel, RiskLevel.low);
-      expect(lowRisk.requiresConfirmation, isFalse);
-
-      final mediumRisk = security.evaluateActionRisk('Turn off Bluetooth');
-      expect(mediumRisk.riskLevel, RiskLevel.medium);
-
-      final highRisk = security.evaluateActionRisk('Transfer money and delete all personal messages');
-      expect(highRisk.riskLevel, RiskLevel.high);
-      expect(highRisk.requiresConfirmation, isTrue);
     });
   });
 

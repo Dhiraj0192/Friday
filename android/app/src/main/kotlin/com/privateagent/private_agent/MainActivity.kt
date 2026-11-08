@@ -726,6 +726,22 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
 
+                    // Friday comes forward to ask Sir's yes, then hands the screen back
+                    // to the app she was driving. The bound accessibility service exempts
+                    // this from Android's background activity-start limit.
+                    "bringToFront" -> {
+                        startActivity(
+                            Intent(this, MainActivity::class.java).addFlags(
+                                Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            )
+                        )
+                        result.success(true)
+                    }
+
+                    "moveToBack" -> result.success(moveTaskToBack(true))
+
                     "openAppInfoSettings" -> {
                         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                             data = Uri.fromParts("package", packageName, null)
