@@ -34,7 +34,9 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
-      - run: flutter test
+      # A hung test fails in minutes instead of holding the runner for hours.
+      - run: flutter test --timeout 2m
+        timeout-minutes: 15
 
   apk:
     name: release apk
