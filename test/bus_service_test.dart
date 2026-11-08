@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:private_agent/services/bus_service.dart';
+import 'package:private_agent/services/friday_profile.dart';
 import 'package:private_agent/services/jarvis_service.dart';
 
 const _token = 'friday-token-0123456789';
@@ -36,11 +37,17 @@ String pairing(Map<String, dynamic> data) =>
 class Laptop {
   final posts = <String, List<Map<String, dynamic>>>{};
   String events = '';
+  String profile = '# Jarvis\nSir\'s chief of staff.';
+  int profileGets = 0;
   bool down = false;
 
   late final client = MockClient.streaming((request, body) async {
     if (down) throw http.ClientException('no route to host');
     expect(request.headers['authorization'], 'Bearer $_token');
+    if (request.method == 'GET' && request.url.path == '/api/bus/profile') {
+      profileGets++;
+      return http.StreamedResponse(Stream.value(utf8.encode(jsonEncode({'text': profile}))), 200);
+    }
     if (request.method == 'GET') {
       return http.StreamedResponse(Stream.value(utf8.encode(events)), 200);
     }
@@ -136,6 +143,7 @@ void main() {
         },
         onNotice: (text) async => notices.add(text),
         statusReport: () async => {'battery': 81},
+        profile: () async => '# Friday',
       );
       final ask = fromJarvis('ask', 'Battery level?', hops: 1);
       final late = fromJarvis('reply', 'Two meetings', id: 'r' * 32, replyTo: 'n' * 32);
@@ -207,6 +215,63 @@ void main() {
       );
       expect(await bus.connectOnce(), isFalse);
       expect(bus.lastError, contains('Pair again'));
+    });
+  });
+
+  group('profiles', () {
+    test('hers lists her real actions and gates, and none of the demo features', () {
+      final text = FridayProfile.build(
+          provider: 'jarvis_laptop', model: 'auto', maxSteps: 15, accessibility: false);
+      expect(text, contains('up to 15 steps'));
+      expect(text, contains('open_app'));
+      expect(text, contains('spend or move money'));
+      expect(text, contains('Declined by Sir'));
+      expect(text, contains('OFF'));
+      for (final fake in ['smart home', 'Sentry', 'Code Black', 'network audit', 'biometric']) {
+        expect(text.toLowerCase(), isNot(contains(fake.toLowerCase())), reason: fake);
+      }
+    });
+
+    test('hers goes up every time, his comes down once a day', () async {
+      final laptop = Laptop();
+      final bus = BusService(
+        client: () => laptop.client,
+        link: () => _link,
+        profile: () async => '# Friday\nSir\'s phone agent.',
+      );
+      final morning = DateTime(2026, 11, 8, 9);
+      await bus.exchangeProfiles(now: morning);
+      await bus.exchangeProfiles(now: morning.add(const Duration(hours: 3)));
+      expect(laptop.sent('/api/bus/friday-profile').map((b) => b['text']),
+          ['# Friday\nSir\'s phone agent.', '# Friday\nSir\'s phone agent.']);
+      expect(laptop.profileGets, 1);
+      expect(bus.jarvisProfile, '# Jarvis\nSir\'s chief of staff.');
+
+      laptop.profile = '# Jarvis\nNew tools.';
+      await bus.exchangeProfiles(now: morning.add(const Duration(hours: 25)));
+      expect(laptop.profileGets, 2);
+      expect(bus.jarvisProfile, '# Jarvis\nNew tools.');
+
+      final later = BusService(client: () => laptop.client, link: () => _link,
+          profile: () async => '# Friday');
+      later.start();
+      await pumpEventQueue();
+      later.stop();
+      expect(later.jarvisProfile, '# Jarvis\nNew tools.', reason: 'cached across restarts');
+    });
+
+    test('a laptop that cannot make his profile leaves the cached copy', () async {
+      final bus = BusService(
+        client: () => MockClient((r) async => http.Response('', r.method == 'GET' ? 503 : 200)),
+        link: () => _link,
+        profile: () async => '# Friday',
+      );
+      bus.jarvisProfile = 'cached';
+      await bus.exchangeProfiles();
+      expect(bus.jarvisProfile, 'cached');
+      final unpaired = BusService(link: () => null)..jarvisProfile = 'old';
+      unpaired.start();
+      expect(unpaired.jarvisProfile, isEmpty);
     });
   });
 

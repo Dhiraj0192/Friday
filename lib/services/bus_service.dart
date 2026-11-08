@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/task_history_entry.dart';
+import 'friday_profile.dart';
 import 'screen_automation_service.dart';
 import 'settings_service.dart';
 import 'system_control_service.dart';
@@ -145,11 +146,13 @@ class BusService extends ChangeNotifier {
     Future<String> Function(String goal)? runAsk,
     Future<void> Function(String text)? onNotice,
     Future<Map<String, dynamic>> Function()? statusReport,
+    Future<String> Function()? profile,
   })  : _newClient = client ?? http.Client.new,
         _link = link ?? _savedLink,
         _runAsk = runAsk ?? _executeForJarvis,
         _onNotice = onNotice ?? _notify,
-        _statusReport = statusReport ?? _phoneStatus;
+        _statusReport = statusReport ?? _phoneStatus,
+        _profile = profile ?? FridayProfile.current;
 
   static final BusService instance = BusService();
 
@@ -162,12 +165,17 @@ class BusService extends ChangeNotifier {
   static const keepOutbox = 50;
   static const _seenKey = 'jarvis_bus_seen';
   static const _outboxKey = 'jarvis_bus_outbox';
+  static const _jarvisProfileKey = 'jarvis_profile_text';
+  static const _jarvisProfileAtKey = 'jarvis_profile_at';
+  static const profileEvery = Duration(hours: 24);
+  static const maxJarvisProfile = 12000;
 
   final http.Client Function() _newClient;
   final BusLink? Function() _link;
   final Future<String> Function(String goal) _runAsk;
   final Future<void> Function(String text) _onNotice;
   final Future<Map<String, dynamic>> Function() _statusReport;
+  final Future<String> Function() _profile;
 
   final _waiting = <String, Completer<String>>{};
   Future<void> _askChain = Future.value();
@@ -179,6 +187,9 @@ class BusService extends ChangeNotifier {
   String? lastError;
   bool jarvisRunning = false;
 
+  /// Jarvis's own profile, fetched from the laptop; empty until paired and fetched.
+  String jarvisProfile = '';
+
   bool get isOnline => state == BusState.online;
 
   // ------------------------------------------------------------------
@@ -187,8 +198,13 @@ class BusService extends ChangeNotifier {
 
   /// Starts the link when it is paired and switched on; idempotent.
   void start() {
-    if (_running || _link() == null) return;
+    if (_link() == null) {
+      jarvisProfile = '';
+      return;
+    }
+    if (_running) return;
     _running = true;
+    unawaited(_loadJarvisProfile());
     unawaited(_loop());
   }
 
@@ -239,6 +255,7 @@ class BusService extends ChangeNotifier {
       _set(BusState.online);
       await _postStatus();
       await flushOutbox();
+      unawaited(exchangeProfiles());
       _statusTimer?.cancel();
       _statusTimer = Timer.periodic(statusEvery, (_) => unawaited(_postStatus()));
 
@@ -424,6 +441,48 @@ class BusService extends ChangeNotifier {
     } catch (_) {
       // the stream will notice
     }
+  }
+
+  /// Each knows the other: hers goes up on every connect, his comes down daily.
+  @visibleForTesting
+  Future<void> exchangeProfiles({DateTime? now}) async {
+    final link = _link();
+    if (link == null) return;
+    try {
+      await _post(link, '/api/bus/friday-profile', {'text': await _profile()});
+    } catch (_) {
+      // next connect tries again
+    }
+    final prefs = await SharedPreferences.getInstance();
+    final at = prefs.getInt(_jarvisProfileAtKey) ?? 0;
+    final clock = now ?? DateTime.now();
+    if (clock.millisecondsSinceEpoch - at < profileEvery.inMilliseconds &&
+        (prefs.getString(_jarvisProfileKey) ?? '').isNotEmpty) {
+      return;
+    }
+    try {
+      final client = _client ?? _newClient();
+      final response = await client
+          .get(link.url.resolve('/api/bus/profile'), headers: _headers(link))
+          .timeout(const Duration(seconds: 40));
+      if (_client == null) client.close();
+      if (response.statusCode != 200) return;
+      final text = (jsonDecode(response.body) as Map<String, dynamic>)['text'];
+      if (text is! String || text.trim().isEmpty) return;
+      jarvisProfile = text.trim().length > maxJarvisProfile
+          ? text.trim().substring(0, maxJarvisProfile)
+          : text.trim();
+      await prefs.setString(_jarvisProfileKey, jarvisProfile);
+      await prefs.setInt(_jarvisProfileAtKey, clock.millisecondsSinceEpoch);
+      notifyListeners();
+    } catch (_) {
+      // keep the cached copy
+    }
+  }
+
+  Future<void> _loadJarvisProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (jarvisProfile.isEmpty) jarvisProfile = prefs.getString(_jarvisProfileKey) ?? '';
   }
 
   Future<http.Response> _post(BusLink link, String path, Object body) {
