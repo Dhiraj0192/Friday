@@ -552,14 +552,21 @@ class BusService extends ChangeNotifier {
       return 'Friday is busy with "${executor.currentGoal ?? 'another task'}"; ask again shortly.';
     }
     final status = await executor.executeTask(goal, origin: 'jarvis');
-    final said = executor.lastAnswer;
-    return switch (status) {
-      TaskStatus.success => said ?? 'Done.',
-      TaskStatus.declined => 'Declined by Sir.',
-      TaskStatus.cancelled => 'Cancelled on the phone.',
-      TaskStatus.failed => said == null ? 'Friday could not finish that.' : 'Could not finish: $said',
-    };
+    return report(status, answer: executor.lastAnswer, failure: executor.lastFailure);
   }
+
+  /// What Jarvis hears when a task he asked for ends: on failure, the reason
+  /// the phone logged, so he can tell Sir what to fix.
+  static String report(TaskStatus status, {String? answer, String? failure}) =>
+      switch (status) {
+        TaskStatus.success => answer ?? 'Done.',
+        TaskStatus.declined => 'Declined by Sir.',
+        TaskStatus.cancelled => 'Cancelled on the phone.',
+        TaskStatus.failed => switch (answer ?? failure) {
+            null => 'Friday could not finish that.',
+            final why => 'Could not finish: $why',
+          },
+      };
 
   static Future<void> _notify(String text) =>
       SystemControlService.instance.notify('Jarvis', text);

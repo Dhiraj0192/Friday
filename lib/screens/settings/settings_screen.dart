@@ -290,7 +290,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 GlassPill(
                   label: entry.value.label,
                   isSelected: _settings.provider == entry.key,
-                  onTap: () => _settings.setProvider(entry.key),
+                  onTap: () async {
+                    if (entry.key == 'on_device' && !await onDeviceReady(context)) return;
+                    await _settings.setProvider(entry.key);
+                  },
                 ),
             ],
           ),

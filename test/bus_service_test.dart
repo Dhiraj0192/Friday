@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:private_agent/models/task_history_entry.dart';
 import 'package:private_agent/models/task_step.dart';
 import 'package:private_agent/services/bus_service.dart';
 import 'package:private_agent/services/friday_profile.dart';
@@ -329,6 +330,29 @@ void main() {
       final profile = FridayProfile.build(provider: 'jarvis_laptop', model: 'auto', maxSteps: 15, accessibility: true);
       expect(profile, contains('ask_jarvis'));
       expect(profile, contains('never asks him back'));
+    });
+  });
+
+  group('report to Jarvis', () {
+    test('a failed task carries the reason the phone logged', () {
+      const why = 'AI request failed: No on-phone model is ready.';
+      expect(BusService.report(TaskStatus.failed, failure: why), 'Could not finish: $why');
+    });
+
+    test("the agent's own words win over the logged error", () {
+      expect(BusService.report(TaskStatus.failed, answer: 'The app would not open.', failure: 'Execution error'),
+          'Could not finish: The app would not open.');
+    });
+
+    test('a failure with no reason still says so', () {
+      expect(BusService.report(TaskStatus.failed), 'Friday could not finish that.');
+    });
+
+    test('success, decline and cancel read as before', () {
+      expect(BusService.report(TaskStatus.success, answer: 'Battery is 80%.'), 'Battery is 80%.');
+      expect(BusService.report(TaskStatus.success), 'Done.');
+      expect(BusService.report(TaskStatus.declined, failure: 'x'), 'Declined by Sir.');
+      expect(BusService.report(TaskStatus.cancelled), 'Cancelled on the phone.');
     });
   });
 }

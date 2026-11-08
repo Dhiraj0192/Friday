@@ -81,6 +81,9 @@ class TaskExecutor extends ChangeNotifier {
   /// What the agent said when it marked the last goal done, if anything.
   String? lastAnswer;
 
+  /// The last error the task logged, so a caller hears why it failed.
+  String? lastFailure;
+
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_historyKey);
@@ -128,6 +131,7 @@ class TaskExecutor extends ChangeNotifier {
   // ------------------------------------------------------------------
 
   void _log(ChatMessage message) {
+    if (message.role == ChatRole.error) lastFailure = message.text;
     logs.add(message);
     if (logs.length > 200) logs.removeAt(0);
     _runLogLines.add(
@@ -307,6 +311,7 @@ class TaskExecutor extends ChangeNotifier {
     _allowed.clear();
     _jarvisAsks = 0;
     lastAnswer = null;
+    lastFailure = null;
     _startedAt = DateTime.now();
     logs.clear();
     _log(ChatMessage.user(goal));

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/model_store.dart';
+import '../../services/brain_router.dart';
 import '../../services/on_device_llm.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/glass_widgets.dart';
@@ -172,4 +173,24 @@ class _ModelsScreenState extends State<ModelsScreen> {
       ),
     );
   }
+}
+
+/// Whether the on-phone brain can be chosen: false, with a note pointing to
+/// On-phone models, until a model is downloaded and set active.
+Future<bool> onDeviceReady(BuildContext context) async {
+  if (await BrainRouter.instance.hasLocal) return true;
+  if (!context.mounted) return false;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      content: const Text('No on-phone model yet. Download one and set it active first.'),
+      action: SnackBarAction(
+        label: 'Models',
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ModelsScreen()),
+        ),
+      ),
+    ));
+  return false;
 }

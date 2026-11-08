@@ -27,6 +27,7 @@ import '../../widgets/network_audit_dialog.dart';
 import '../../widgets/optical_solver_dialog.dart';
 import '../../widgets/polyglot_diplomat_dialog.dart';
 import '../security/code_black_screen.dart';
+import 'models_screen.dart';
 import 'permissions_screen.dart';
 
 /// Dedicated configuration suite for all J.A.R.V.I.S. autonomous capabilities:
@@ -2201,6 +2202,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
               ),
               value: _settings.localFirstPrivacyMode,
               onChanged: (val) async {
+                if (val && !await onDeviceReady(context)) return;
                 await _settings.setLocalFirstPrivacyMode(val);
                 setState(() {});
               },
