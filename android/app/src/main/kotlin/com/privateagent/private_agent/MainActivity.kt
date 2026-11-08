@@ -32,7 +32,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Base64
 import androidx.core.content.FileProvider
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -46,7 +46,7 @@ import kotlin.math.sqrt
  * Bridges Flutter -> [AgentAccessibilityService] via `com.privateagent/accessibility`
  * and continuous hands-free voice via `com.privateagent/speech`.
  */
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
 
     private val channelName = "com.privateagent/accessibility"
     private val speechChannelName = "com.privateagent/speech"

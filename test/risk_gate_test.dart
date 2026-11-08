@@ -30,7 +30,10 @@ TaskStep tap(String text) =>
     TaskStep(action: TaskStep.actionClickText, params: {'text': text});
 
 void main() {
-  tearDown(() => RiskGate.approver = null);
+  tearDown(() {
+    RiskGate.approver = null;
+    RiskGate.verifier = null;
+  });
 
   group('classifyGoal', () {
     final cases = <String, RiskCategory?>{
@@ -130,6 +133,32 @@ void main() {
           'A request from Jarvis would send or post something: "text Pratima hi". Allow it?');
       expect(const RiskRequest(category: RiskCategory.call, what: 'call Mom').prompt,
           startsWith('This would place a call'));
+    });
+  });
+
+  group('fingerprint', () {
+    const pay = RiskRequest(category: RiskCategory.pay, what: 'pay 500 to Ravi');
+
+    test('only money, deletion and power need it', () {
+      expect(RiskCategory.values.where((c) => c.isHighRisk).toSet(),
+          {RiskCategory.pay, RiskCategory.delete, RiskCategory.power});
+    });
+
+    test('other acts pass without asking for it', () async {
+      var asked = false;
+      RiskGate.verifier = (_) async => asked = true;
+      expect(await RiskGate.verify(const RiskRequest(category: RiskCategory.send, what: 'x')), isTrue);
+      expect(asked, isFalse);
+    });
+
+    test('fails closed with no check, a failed check, or one that throws', () async {
+      expect(await RiskGate.verify(pay), isFalse);
+      RiskGate.verifier = (_) async => false;
+      expect(await RiskGate.verify(pay), isFalse);
+      RiskGate.verifier = (_) async => throw StateError('no fingerprint enrolled');
+      expect(await RiskGate.verify(pay), isFalse);
+      RiskGate.verifier = (_) async => true;
+      expect(await RiskGate.verify(pay), isTrue);
     });
   });
 }

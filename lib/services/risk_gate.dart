@@ -15,6 +15,11 @@ extension RiskCategoryText on RiskCategory {
         RiskCategory.install => 'install or update an app',
         RiskCategory.power => 'restart, power off or sign out',
       };
+
+  /// Acts that cannot be taken back: Sir's yes must also pass his fingerprint
+  /// (or screen lock), so a tap by anyone holding the phone is not enough.
+  bool get isHighRisk =>
+      this == RiskCategory.pay || this == RiskCategory.delete || this == RiskCategory.power;
 }
 
 /// One thing waiting for Sir's yes.
@@ -43,6 +48,21 @@ class RiskGate {
   RiskGate._();
 
   static RiskApprover? approver;
+
+  /// Checks it is Sir holding the phone, for [RiskCategoryText.isHighRisk] acts.
+  static RiskApprover? verifier;
+
+  /// Sir's identity check after his yes; fails closed like [approve].
+  static Future<bool> verify(RiskRequest request) async {
+    if (!request.category.isHighRisk) return true;
+    final check = verifier;
+    if (check == null) return false;
+    try {
+      return await check(request);
+    } catch (_) {
+      return false;
+    }
+  }
 
   static Future<bool> approve(RiskRequest request) async {
     final ask = approver;

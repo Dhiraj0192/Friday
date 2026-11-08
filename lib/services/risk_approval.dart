@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../app.dart';
 import 'risk_gate.dart';
@@ -19,7 +20,16 @@ class RiskApproval {
   static bool get isAsking => _asking > 0;
   static int _asking = 0;
 
-  static void install() => RiskGate.approver = ask;
+  static void install() {
+    RiskGate.approver = ask;
+    RiskGate.verifier = _fingerprint;
+  }
+
+  /// Fingerprint, or the phone's screen lock where the fingerprint fails.
+  static Future<bool> _fingerprint(RiskRequest request) => LocalAuthentication().authenticate(
+        localizedReason: 'Confirm it is you, Sir: ${request.prompt}',
+        persistAcrossBackgrounding: true,
+      );
 
   static Future<bool> ask(RiskRequest request) async {
     _asking++;
@@ -41,11 +51,13 @@ class RiskApproval {
         await screen.bringToFront();
       } catch (_) {}
     }
-    final yes = await _dialog(request).timeout(timeout, onTimeout: () {
+    var yes = await _dialog(request).timeout(timeout, onTimeout: () {
       final nav = PrivateAgentApp.navigatorKey.currentState;
       if (nav != null && nav.canPop()) nav.pop(false);
       return false;
     });
+    // While Friday is still in front: the system prompt needs her activity.
+    if (yes) yes = await RiskGate.verify(request);
     if (!wasInFront) {
       try {
         await screen.moveToBack();
