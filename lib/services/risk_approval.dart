@@ -48,7 +48,7 @@ class RiskApproval {
       nav = PrivateAgentApp.navigatorKey.currentState;
       if (nav == null) await Future<void>.delayed(const Duration(milliseconds: 100));
     }
-    if (nav == null) return false;
+    if (nav == null || !nav.context.mounted) return false;
     final answer = await showDialog<bool>(
       context: nav.context,
       barrierDismissible: false,

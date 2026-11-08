@@ -331,6 +331,7 @@ class JarvisService extends ChangeNotifier {
     if (leading != null) {
       return normalized
           .substring(leading.end)
+          .trim()
           .replaceFirst(RegExp(r'^(?:wake\s+up|please|online)\b\s*', caseSensitive: false), '')
           .trim();
     }

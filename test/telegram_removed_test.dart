@@ -30,7 +30,12 @@ void main() {
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
         .where((f) => !f.path.endsWith('settings_service.dart'))
-        .where((f) => f.readAsStringSync().toLowerCase().contains('telegram'))
+        // The Telegram app's package id may appear (Enter sends there).
+        .where((f) => f
+            .readAsStringSync()
+            .toLowerCase()
+            .replaceAll('org.telegram.messenger', '')
+            .contains('telegram'))
         .map((f) => f.path);
     expect(hits, isEmpty);
   });

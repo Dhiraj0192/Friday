@@ -86,7 +86,7 @@ void main() {
       await personality.setHumor(HumorLevel.subtle);
 
       final jarvisPrompt = personality.buildPersonaPrompt('Please help me quickly');
-      expect(jarvisPrompt, contains('ARCHETYPE: You are Jarvis'));
+      expect(jarvisPrompt, contains('ARCHETYPE: You are Friday'));
       expect(jarvisPrompt, contains('FORMALITY'));
 
       // Emotional state detection
@@ -423,7 +423,7 @@ void main() {
 
       // Test reset soul
       await hermes.resetSoul();
-      expect(hermes.soulMd, contains('J.A.R.V.I.S. Core Identity'));
+      expect(hermes.soulMd, contains('Friday Core Identity'));
 
       // Clean up
       await hermes.resetAll();
@@ -690,10 +690,10 @@ void main() {
       expect(profile['city'], 'Malibu');
     });
 
-    test('Creator identity accurately declares Abuzar', () {
+    test('Creator answer credits the original author, AbuZar Ansari', () {
       final personality = PersonalityService.instance;
       final answer = personality.getCreatorAnswer();
-      expect(answer, contains('Abuzar'));
+      expect(answer, contains('AbuZar Ansari'));
       expect(answer.toLowerCase(), isNot(contains('tony stark')));
     });
 
