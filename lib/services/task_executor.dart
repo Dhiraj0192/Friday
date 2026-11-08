@@ -59,9 +59,9 @@ class TaskExecutor extends ChangeNotifier {
   bool get isPaused => state == ExecutorState.paused;
   bool get isBusy => state != ExecutorState.idle;
 
-  /// Called when a task finishes so external integrations (Telegram) can
-  /// push results back to the originating chat.
-  void Function(String chatId, TaskHistoryEntry entry)? onTaskFinished;
+  /// Called when a task started with an [origin] finishes, so the caller
+  /// that asked for it (the Jarvis bus) can report the result back.
+  void Function(String origin, TaskHistoryEntry entry)? onTaskFinished;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -268,9 +268,9 @@ class TaskExecutor extends ChangeNotifier {
   // Main loop
   // ------------------------------------------------------------------
 
-  /// Executes [goal]. When [telegramChatId] is set, completion (with a
-  /// screenshot) is reported back through [onTaskFinished].
-  Future<TaskStatus> executeTask(String goal, {String? telegramChatId}) async {
+  /// Executes [goal]. When [origin] is set, completion is reported back
+  /// through [onTaskFinished].
+  Future<TaskStatus> executeTask(String goal, {String? origin}) async {
     if (isBusy) {
       _log(ChatMessage.error('Another task is already running.'));
       return TaskStatus.failed;
@@ -340,7 +340,7 @@ class TaskExecutor extends ChangeNotifier {
       status = TaskStatus.failed;
       return status;
     } finally {
-      await _finalize(goal, status, telegramChatId);
+      await _finalize(goal, status, origin);
     }
   }
 
@@ -606,7 +606,7 @@ class TaskExecutor extends ChangeNotifier {
   Future<void> _finalize(
     String goal,
     TaskStatus status,
-    String? telegramChatId,
+    String? origin,
   ) async {
     final entry = TaskHistoryEntry(
       goal: goal,
@@ -637,8 +637,8 @@ class TaskExecutor extends ChangeNotifier {
       '$goal\n$summary',
     );
 
-    if (telegramChatId != null) {
-      onTaskFinished?.call(telegramChatId, entry);
+    if (origin != null) {
+      onTaskFinished?.call(origin, entry);
     }
 
     state = ExecutorState.idle;

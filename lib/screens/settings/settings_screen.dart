@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../services/personality_service.dart';
 import '../../services/settings_service.dart';
-import '../../services/telegram_service.dart';
 import '../../widgets/glass_widgets.dart';
 import 'jarvis_settings_screen.dart';
 import 'permissions_screen.dart';
@@ -19,16 +18,12 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _settings = SettingsService.instance;
-  final _telegram = TelegramService.instance;
 
   late final TextEditingController _baseUrlController;
   late final TextEditingController _apiKeyController;
   late final TextEditingController _modelController;
-  late final TextEditingController _tokenController;
-  late final TextEditingController _chatsController;
 
   bool _obscureKey = true;
-  bool _obscureToken = true;
 
   String _lastSyncedProvider = '';
 
@@ -38,9 +33,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _baseUrlController = TextEditingController(text: _settings.baseUrl);
     _apiKeyController = TextEditingController(text: _settings.apiKey);
     _modelController = TextEditingController(text: _settings.model);
-    _tokenController = TextEditingController(text: _settings.telegramToken);
-    _chatsController =
-        TextEditingController(text: _settings.telegramAllowedChats.join(', '));
     _lastSyncedProvider = _settings.provider;
 
     PersonalityService.instance.init().then((_) {
@@ -54,21 +46,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ]) {
       c.addListener(_onAiFieldChanged);
     }
-    for (final c in [
-      _tokenController,
-      _chatsController,
-    ]) {
-      c.addListener(_onTelegramFieldChanged);
-    }
     _settings.addListener(_onSettingsChanged);
-    _telegram.addListener(_onTelegramChanged);
     PersonalityService.instance.addListener(_onServiceChanged);
   }
 
   @override
   void dispose() {
     _settings.removeListener(_onSettingsChanged);
-    _telegram.removeListener(_onTelegramChanged);
     PersonalityService.instance.removeListener(_onServiceChanged);
     for (final c in [
       _baseUrlController,
@@ -77,17 +61,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ]) {
       c.removeListener(_onAiFieldChanged);
     }
-    for (final c in [
-      _tokenController,
-      _chatsController,
-    ]) {
-      c.removeListener(_onTelegramFieldChanged);
-    }
     _baseUrlController.dispose();
     _apiKeyController.dispose();
     _modelController.dispose();
-    _tokenController.dispose();
-    _chatsController.dispose();
     super.dispose();
   }
 
@@ -101,10 +77,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {});
   }
 
-  void _onTelegramChanged() {
-    if (mounted) setState(() {});
-  }
-
   void _onServiceChanged() {
     if (mounted) setState(() {});
   }
@@ -113,49 +85,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() {});
   }
 
-  void _onTelegramFieldChanged() {
-    if (mounted) setState(() {});
-  }
-
   bool get _aiDirty =>
       _baseUrlController.text.trim() != _settings.baseUrl ||
       _apiKeyController.text.trim() != _settings.apiKey ||
       _modelController.text.trim() != _settings.model;
-
-  bool get _telegramDirty =>
-      _tokenController.text.trim() != _settings.telegramToken ||
-      _chatsController.text.trim() != _settings.telegramAllowedChats.join(', ');
-
-  Future<void> _saveTelegramSettings() async {
-    await _settings.setTelegramToken(_tokenController.text.trim());
-    await _settings.setTelegramAllowedChats(
-      _chatsController.text
-          .split(RegExp(r'[,\s]+'))
-          .where((s) => s.isNotEmpty)
-          .toList(),
-    );
-    if (_settings.telegramEnabled) {
-      await _telegram.restart();
-    }
-    if (!mounted) return;
-    setState(() {});
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 20),
-              SizedBox(width: 10),
-              Text('Telegram configuration saved & reloaded'),
-            ],
-          ),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-      );
-  }
 
   Future<void> _saveAiSettings() async {
     await _settings.setBaseUrl(_baseUrlController.text);
@@ -274,14 +207,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: const Color(0xFFA78BFA),
                 ),
                 _agentCard(),
-                const SizedBox(height: 22),
-
-                _sectionHeader(
-                  icon: Icons.send_rounded,
-                  title: 'Telegram Remote Bridge',
-                  color: const Color(0xFF0EA5E9),
-                ),
-                _telegramCard(),
                 const SizedBox(height: 22),
 
                 _sectionHeader(
@@ -736,178 +661,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _settings.voiceFeedback,
             onChanged: (v) => _settings.setVoiceFeedback(v),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _telegramCard() {
-    final running = _telegram.isRunning;
-    final owner = _settings.telegramOwnerChatId;
-
-    return GlassCard(
-      borderRadius: 22,
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GlassSwitchTile(
-            title: 'Enable Telegram Remote Bridge',
-            subtitle: running ? 'Bot actively polling for commands' : 'Bot service stopped',
-            icon: Icons.send_rounded,
-            value: _settings.telegramEnabled,
-            onChanged: (v) async {
-              await _settings.setTelegramEnabled(v);
-              if (v) {
-                await _telegram.start();
-              } else {
-                _telegram.stop();
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          GlassTextField(
-            controller: _tokenController,
-            labelText: 'Telegram Bot Token (from @BotFather)',
-            obscureText: _obscureToken,
-            prefixIcon: const Icon(Icons.key_outlined, size: 20),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscureToken ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                size: 20,
-              ),
-              onPressed: () => setState(() => _obscureToken = !_obscureToken),
-            ),
-          ),
-          const SizedBox(height: 12),
-          GlassTextField(
-            controller: _chatsController,
-            labelText: 'Allowed Chat IDs',
-            hintText: 'Comma-separated (leave empty for auto-pairing)',
-            prefixIcon: const Icon(Icons.group_outlined, size: 20),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: _telegramDirty ? _saveTelegramSettings : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _telegramDirty
-                    ? const Color(0xFF0EA5E9)
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: _telegramDirty ? 4 : 0,
-              ),
-              icon: Icon(
-                _telegramDirty ? Icons.save_rounded : Icons.check_circle_outline,
-                size: 18,
-              ),
-              label: Text(
-                _telegramDirty ? 'Save Telegram settings' : 'Telegram saved',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (owner.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.greenAccent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.35)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified_user_rounded, size: 18, color: Colors.greenAccent),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Paired Owner Device',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.greenAccent,
-                          ),
-                        ),
-                        Text(
-                          'Chat ID: $owner',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      backgroundColor: Colors.redAccent.withValues(alpha: 0.12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    ),
-                    icon: const Icon(Icons.link_off_rounded, size: 15),
-                    label: const Text('Unpair', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                    onPressed: () async {
-                      await _settings.setTelegramOwnerChatId('');
-                      if (!mounted) return;
-                      setState(() {});
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Telegram owner pairing unlinked'),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.amberAccent.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.25)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.link_outlined, size: 18, color: Colors.amberAccent),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Status: Unpaired',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.amberAccent,
-                          ),
-                        ),
-                        Text(
-                          'Send /start or /pair to your bot in Telegram to auto-pair, or enter Chat IDs above.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );

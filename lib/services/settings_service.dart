@@ -36,7 +36,19 @@ class SettingsService extends ChangeNotifier {
     if (_prefs?.getBool('ai_use_system_prompt') != true) {
       await _prefs?.setBool('ai_use_system_prompt', true);
     }
+    // The Telegram bridge was removed; drop its saved bot token and chats.
+    for (final key in _removedTelegramKeys) {
+      await _prefs?.remove(key);
+    }
   }
+
+  static const _removedTelegramKeys = [
+    'telegram_enabled',
+    'telegram_token',
+    'telegram_allowed_chats',
+    'telegram_owner_chat',
+    'telegram_offset',
+  ];
 
   // ------------------------------------------------------------------
   // AI provider
@@ -156,44 +168,6 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ------------------------------------------------------------------
-  // Telegram
-  // ------------------------------------------------------------------
-
-  bool get telegramEnabled => _prefs?.getBool('telegram_enabled') ?? false;
-  Future<void> setTelegramEnabled(bool value) async {
-    await _prefs?.setBool('telegram_enabled', value);
-    notifyListeners();
-  }
-
-  String get telegramToken => _prefs?.getString('telegram_token') ?? '';
-  Future<void> setTelegramToken(String value) async {
-    await _prefs?.setString('telegram_token', value.trim());
-    notifyListeners();
-  }
-
-  /// Chat ids allowed to control the device. Empty = the first chat that
-  /// messages the bot becomes the owner (and is remembered).
-  List<String> get telegramAllowedChats =>
-      _prefs?.getStringList('telegram_allowed_chats') ?? const [];
-  Future<void> setTelegramAllowedChats(List<String> value) async {
-    await _prefs?.setStringList('telegram_allowed_chats', value);
-    notifyListeners();
-  }
-
-  String get telegramOwnerChatId =>
-      _prefs?.getString('telegram_owner_chat') ?? '';
-  Future<void> setTelegramOwnerChatId(String value) async {
-    await _prefs?.setString('telegram_owner_chat', value.trim());
-    notifyListeners();
-  }
-
-  int get telegramUpdateOffset => _prefs?.getInt('telegram_offset') ?? 0;
-  Future<void> setTelegramUpdateOffset(int value) async {
-    await _prefs?.setInt('telegram_offset', value);
-  }
-
-  // ------------------------------------------------------------------
   // ------------------------------------------------------------------
   // Interaction mode
   // ------------------------------------------------------------------

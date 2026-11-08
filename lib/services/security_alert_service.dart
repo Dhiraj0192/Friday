@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'settings_service.dart';
-import 'telegram_service.dart';
+import 'system_control_service.dart';
 
 enum RiskLevel {
   low,
@@ -23,7 +22,7 @@ class SecurityAssessment {
 /// Security monitoring & risk assessment engine:
 /// - Classifies actions by risk level before execution.
 /// - Requires user confirmation before high-risk operations (sending messages, calls, purchases, data deletion).
-/// - Monitors battery levels and dispatches emergency alerts via Telegram when enabled.
+/// - Monitors battery levels and shows emergency alerts as local notifications.
 class SecurityAlertService extends ChangeNotifier {
   SecurityAlertService._();
   static final SecurityAlertService instance = SecurityAlertService._();
@@ -70,18 +69,8 @@ class SecurityAlertService extends ChangeNotifier {
     );
   }
 
-  /// Sends a security alert message to the owner via Telegram if configured.
+  /// Shows a security alert as a local notification on the phone.
   Future<void> dispatchSecurityAlert(String alertMessage) async {
-    final telegram = TelegramService.instance;
-    final settings = SettingsService.instance;
-    final ownerChatId = settings.telegramOwnerChatId;
-    if (telegram.isRunning && ownerChatId.isNotEmpty) {
-      try {
-        await telegram.sendMessage(
-          ownerChatId,
-          '🚨 JARVIS SECURITY ALERT:\n$alertMessage',
-        );
-      } catch (_) {}
-    }
+    await SystemControlService.instance.notify('Friday security alert', alertMessage);
   }
 }

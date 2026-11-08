@@ -279,7 +279,7 @@ Full cyber defense and IoT reconnaissance sweep on your local Wi-Fi network.
 
 ---
 
-## 🛡️ Tactical Sentry Mode & Telegram Remote Control
+## 🛡️ Tactical Sentry Mode
 
 ### 🚨 Sentry Mode (Anti-Theft Watchdog)
 Transform your phone into an armed security station when you step away from your desk:
@@ -288,16 +288,7 @@ Transform your phone into an armed security station when you step away from your
 3. **Silent Capture**: The instant the phone is moved or picked up, J.A.R.V.I.S. silently captures a front-camera snapshot of the intruder via the Camera2 API.
 4. **Vocal Deterrence**: Booms a loud, commanding security alert through the speakers:
    > *"Security violation detected. Spatial coordinates and facial telemetry logged and dispatched."*
-5. **Telegram Dispatch**: Automatically uploads the intruder's photo, breach timestamp, and coordinates to your private Telegram chat.
-
-### ✈️ Telegram Bot Remote Terminal
-Full remote control of your smartphone from any other device running Telegram:
-- **Long-Polling Engine**: Connects via `telegram_service.dart` with zero webhook setup required.
-- **Remote Commands**:
-  - `/status`: Checks device battery, active task, and accessibility status.
-  - `/screenshot`: Captures current phone screen and transmits high-res PNG back to Telegram.
-  - `/cancel` or `/stop`: Terminates any running automation task immediately.
-  - `<Any Task Prose>`: Type *"Open Uber and check price to airport"* — J.A.R.V.I.S. executes the task on your phone and sends back the final screenshot!
+5. **Local Alert**: Raises a notification with the breach time; the snapshot stays in the app.
 
 ---
 
@@ -392,7 +383,7 @@ Control smart lights, relays, switches, and scenes over your local Wi-Fi:
 | **Brain Dump** | *"Remind me to call Jack at 4pm and draft a WhatsApp to Sarah saying I am late"* | Decouples chaotic stream-of-consciousness dump into parallel executions |
 | **Optical Solver** | *"Jarvis, solve this"*, *"Inspect this error"*, *"Split this bill"* | Point camera to solve math equations, debug stack traces, and calculate split receipts |
 | **Network Audit** | *"Audit my network"*, *"Who is on my Wi-Fi?"*, *"Check network security"* | Scans subnet, identifies connected device MACs/vendors, and audits open ports & IP cameras |
-| **Sentry Mode** | *"Jarvis, activate sentry protocol"*, *"Disarm sentry"* | Accelerometer motion anti-theft watchdog with silent intruder camera capture & Telegram dispatch |
+| **Sentry Mode** | *"Jarvis, activate sentry protocol"*, *"Disarm sentry"* | Accelerometer motion anti-theft watchdog with silent intruder camera capture & a local alert |
 | **Hardware Specs** | *"System specs"*, *"How much RAM do I have?"*, *"Free storage space"* | Speaks device model, manufacturer, RAM, ROM, and thermals without opening settings |
 | **Smart Home** | *"Turn on the living room light"*, *"Dim lights to 20%"*, *"Night mode"* | Controls Home Assistant lights, relays, and scenes over local LAN |
 | **Commute** | *"How is traffic to work?"*, *"When should I leave for my meeting?"* | Checks OSRM route, evaluates rush hour delay, and alerts departure time |

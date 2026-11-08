@@ -5,14 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'personality_service.dart';
-import 'settings_service.dart';
-import 'telegram_service.dart';
+import 'system_control_service.dart';
 import 'voice_service.dart';
 
 /// Tactical Sentry Mode Anti-Theft Watchdog:
 /// Uses device motion sensors to detect unauthorized phone handling,
 /// captures silent front-camera telemetry, alerts the room,
-/// and dispatches the intruder snapshot to the user's paired Telegram terminal.
+/// and raises a local notification with the time of the breach.
 class SentryService extends ChangeNotifier {
   SentryService._();
   static final SentryService instance = SentryService._();
@@ -96,22 +95,12 @@ class SentryService extends ChangeNotifier {
     const alertSpeech = 'Security violation detected. Spatial coordinates and facial telemetry logged and dispatched.';
     unawaited(VoiceService.instance.speak(alertSpeech));
 
-    // 2. Dispatch photo & breach coordinates to connected Telegram terminal
-    final settings = SettingsService.instance;
-    final ownerChat = settings.telegramOwnerChatId;
-    if (ownerChat.isNotEmpty) {
-      final timeFormatted = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-      final caption = '🚨 *J.A.R.V.I.S. SENTRY ALERT*\n'
-          '⚠️ *Unauthorized Movement Detected!*\n'
-          '⏱ *Timestamp*: $timeFormatted\n'
-          '🛡 *Status*: Intruder snapshot acquired & logged.';
-
-      if (photoBase64.isNotEmpty) {
-        await TelegramService.instance.sendPhoto(ownerChat, photoBase64, caption: caption);
-      } else {
-        await TelegramService.instance.sendMessage(ownerChat, caption);
-      }
-    }
+    // 2. Local notification; the snapshot stays in the app (lastBreachPhoto).
+    final timeFormatted = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    await SystemControlService.instance.notify(
+      'Friday sentry alert',
+      'Unauthorized movement at $timeFormatted. Snapshot saved in the app.',
+    );
   }
 }
 
