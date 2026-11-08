@@ -75,8 +75,7 @@ A 1B model is fine for chat and simple commands, but weak at driving apps. Long 
 - **Off switches:**
   - the **Jarvis Link** toggle in Friday;
   - revoking her token on the laptop, which is separate from the phone web app's token.
-
-  Both sides keep an audit log.
+- **Log:** the laptop records one line per message, each way, in `~/my-agent/logs/friday-bus.log`: delivered, refused, dropped as a resend, or expired unsent. A late reply, one that arrives after Jarvis has stopped waiting, is passed to him as a message from Friday. Friday keeps no log of her own yet.
 
 ## Install
 
