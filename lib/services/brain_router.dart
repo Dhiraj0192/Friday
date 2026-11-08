@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -24,6 +25,10 @@ class BrainRouter {
 
   /// Small models answer short; a long budget only adds wait on a phone CPU.
   static const maxLocalTokens = 512;
+
+  /// What fits the phone model's 8K context with room left for the reply, at
+  /// a cautious three characters a token.
+  static const maxLocalChars = 20000;
 
   final Future<File?> Function() _activeModel;
   final Future<void> Function(String path) _load;
@@ -61,6 +66,21 @@ class BrainRouter {
     return (system.join('\n\n'), turns);
   }
 
+  /// [turns] cut to fit beside [system] in [budget] characters: the oldest go
+  /// first, the kept ones start with Sir's, and only then is the last one cut.
+  static List<(bool, String)> fit(String system, List<(bool, String)> turns, {int budget = maxLocalChars}) {
+    final kept = List.of(turns);
+    int size() => kept.fold(system.length, (n, t) => n + t.$2.length);
+    while (kept.length > 1 && (size() > budget || !kept.first.$1)) {
+      kept.removeAt(0);
+    }
+    if (kept.isNotEmpty && size() > budget) {
+      final last = kept.removeLast();
+      kept.add((last.$1, last.$2.substring(0, max(0, budget - system.length))));
+    }
+    return kept;
+  }
+
   /// Streams the phone model's answer to [messages]; [fallback] marks it as offline mode.
   Stream<String> localStream(
     List<Map<String, dynamic>> messages, {
@@ -75,9 +95,10 @@ class BrainRouter {
     }
     final parts = split(messages);
     if (parts == null) throw const LocalBrainException('The on-phone model cannot read images.');
+    final turns = fit(parts.$1, parts.$2);
     await _load(file.path);
     offline.value = fallback;
-    yield* withoutThinking(_generate(parts.$1, parts.$2, maxTokens.clamp(16, maxLocalTokens), temperature));
+    yield* withoutThinking(_generate(parts.$1, turns, maxTokens.clamp(16, maxLocalTokens), temperature));
   }
 
   /// Drops a leading `<think>...</think>` block (Qwen 3 thinks aloud first).

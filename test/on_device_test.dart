@@ -170,6 +170,14 @@ void main() {
       ]), isNull);
     });
 
+    test('a long conversation is cut to fit the phone model, oldest first', () {
+      final turns = [(true, 'a' * 50), (false, 'b' * 50), (true, 'c' * 50), (false, 'd' * 10), (true, 'e' * 30)];
+      expect(BrainRouter.fit('S' * 10, turns, budget: 1000), turns);
+      expect(BrainRouter.fit('S' * 10, turns, budget: 99), [(true, 'e' * 30)]);
+      expect(BrainRouter.fit('S' * 10, turns, budget: 140), [(true, 'c' * 50), (false, 'd' * 10), (true, 'e' * 30)]);
+      expect(BrainRouter.fit('S' * 10, [(true, 'x' * 500)], budget: 100), [(true, 'x' * 90)]);
+    });
+
     test('plain answers pass through untouched', () async {
       final out = await BrainRouter.withoutThinking(Stream.fromIterable(['Y', 'es.'])).join();
       expect(out, 'Yes.');
