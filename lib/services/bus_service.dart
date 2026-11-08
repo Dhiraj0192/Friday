@@ -258,7 +258,10 @@ class BusService extends ChangeNotifier {
       await flushOutbox();
       unawaited(exchangeProfiles());
       _statusTimer?.cancel();
-      _statusTimer = Timer.periodic(statusEvery, (_) => unawaited(_postStatus()));
+      _statusTimer = Timer.periodic(statusEvery, (_) {
+        unawaited(_postStatus());
+        unawaited(refreshProfile());
+      });
 
       final parser = SseParser();
       final lines = response.stream
@@ -433,6 +436,24 @@ class BusService extends ChangeNotifier {
     }
   }
 
+  /// Sends hers again only when it changed, such as after a brain switch.
+  @visibleForTesting
+  Future<void> refreshProfile() async {
+    final link = _link();
+    if (link == null) return;
+    final text = await _profile();
+    if (text != _postedProfile) await _sendProfile(link, text);
+  }
+
+  Future<void> _sendProfile(BusLink link, String text) async {
+    try {
+      final response = await _post(link, '/api/bus/friday-profile', {'text': text});
+      if (response.statusCode == 200) _postedProfile = text;
+    } catch (_) {
+      // the next minute tries again
+    }
+  }
+
   Future<void> _postStatus() async {
     final link = _link();
     if (link == null) return;
@@ -444,16 +465,15 @@ class BusService extends ChangeNotifier {
     }
   }
 
+  /// Hers as the laptop last took it, so a change goes up within a minute.
+  String? _postedProfile;
+
   /// Each knows the other: hers goes up on every connect, his comes down daily.
   @visibleForTesting
   Future<void> exchangeProfiles({DateTime? now}) async {
     final link = _link();
     if (link == null) return;
-    try {
-      await _post(link, '/api/bus/friday-profile', {'text': await _profile()});
-    } catch (_) {
-      // next connect tries again
-    }
+    await _sendProfile(link, await _profile());
     final prefs = await SharedPreferences.getInstance();
     final at = prefs.getInt(_jarvisProfileAtKey) ?? 0;
     final clock = now ?? DateTime.now();

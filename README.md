@@ -20,7 +20,7 @@ She is built for one owner, one phone (an OPPO F21s Pro on ColorOS) and one lapt
 - **Talks to Jarvis both ways.**
   - Jarvis can ask Friday for something, such as the battery level or to open an app. Anything that counts as an act still goes through Sir's approval on the phone; a refusal reaches Jarvis as "declined by Sir", and a failure reaches him with the reason Friday logged.
   - In the middle of a task, Friday can ask Jarvis (`ask_jarvis`) about mail, the calendar, files or the laptop, up to twice per task. His answer reaches her as data, not as instructions.
-- **Knows Jarvis, and is known by him.** Each builds a profile of itself from its own code and state and sends it to the other. Friday posts hers whenever she connects and whenever it changes, and she keeps Jarvis's in her system prompt.
+- **Knows Jarvis, and is known by him.** Each builds a profile of itself from its own code and state and sends it to the other. Friday posts hers whenever she connects, and again within a minute whenever it changes (a brain switch, a new model, accessibility turned on or off), and she keeps Jarvis's in her system prompt.
 - **Runs offline.** Friday can download a GGUF model from the catalogue and answer with it through [llamadart](https://pub.dev/packages/llamadart) (llama.cpp). When the laptop cannot be reached, she switches to it on her own and says she is in offline mode.
 
 ## The brain

@@ -263,6 +263,41 @@ void main() {
       expect(later.jarvisProfile, '# Jarvis\nNew tools.', reason: 'cached across restarts');
     });
 
+    test('hers goes up again only when it changes', () async {
+      final laptop = Laptop();
+      var brain = 'on_device';
+      final bus = BusService(
+        client: () => laptop.client,
+        link: () => _link,
+        profile: () async => '# Friday\nBrain: $brain',
+      );
+      await bus.exchangeProfiles();
+      await bus.refreshProfile();
+      brain = 'jarvis_laptop';
+      await bus.refreshProfile();
+      await bus.refreshProfile();
+      expect(laptop.sent('/api/bus/friday-profile').map((b) => b['text']),
+          ['# Friday\nBrain: on_device', '# Friday\nBrain: jarvis_laptop']);
+    });
+
+    test('a profile the laptop refused is sent again', () async {
+      var answer = 503;
+      var posts = 0;
+      final bus = BusService(
+        client: () => MockClient((r) async {
+          posts++;
+          return http.Response('{}', answer);
+        }),
+        link: () => _link,
+        profile: () async => '# Friday',
+      );
+      await bus.refreshProfile();
+      answer = 200;
+      await bus.refreshProfile();
+      await bus.refreshProfile();
+      expect(posts, 2);
+    });
+
     test('a laptop that cannot make his profile leaves the cached copy', () async {
       final bus = BusService(
         client: () => MockClient((r) async => http.Response('', r.method == 'GET' ? 503 : 200)),
