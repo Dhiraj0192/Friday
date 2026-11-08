@@ -9,12 +9,37 @@ class PhoneStorageService {
 
   static const MethodChannel _channel = MethodChannel('com.privateagent/accessibility');
 
+  /// Why [folder] / [fileName] may not be used, or null when they are safe:
+  /// one plain name each, never a path, never `..`, never the apps' private
+  /// `Android` folder. MainActivity checks the same again on the resolved path.
+  static String? pathProblem(String folder, [String? fileName]) {
+    final f = folder.trim();
+    if (!_isPlainName(f)) return 'Folder "$folder" must be a single folder name.';
+    if (f.toLowerCase() == 'android') return 'The Android folder holds app data; Friday stays out of it.';
+    if (fileName != null && !_isPlainName(fileName.trim())) {
+      return 'File name "$fileName" must be a plain name, not a path.';
+    }
+    return null;
+  }
+
+  static bool _isPlainName(String name) =>
+      name.isNotEmpty &&
+      name != '.' &&
+      name != '..' &&
+      !name.contains('/') &&
+      !name.contains('\\') &&
+      !name.contains('\x00');
+
+  static Map<String, dynamic> _refused(String why) => {'success': false, 'message': why};
+
   Future<Map<String, dynamic>> createFile({
     required String fileName,
     required String content,
     String folder = 'Download',
     bool append = false,
   }) async {
+    final problem = pathProblem(folder, fileName);
+    if (problem != null) return _refused(problem);
     try {
       final res = await _channel.invokeMapMethod<String, dynamic>('manageStorageFile', {
         'action': append ? 'edit' : 'create',
@@ -33,6 +58,8 @@ class PhoneStorageService {
     required String fileName,
     String folder = 'Download',
   }) async {
+    final problem = pathProblem(folder, fileName);
+    if (problem != null) return _refused(problem);
     try {
       final res = await _channel.invokeMapMethod<String, dynamic>('manageStorageFile', {
         'action': 'read',
@@ -46,6 +73,8 @@ class PhoneStorageService {
   }
 
   Future<Map<String, dynamic>> listFiles({String folder = 'Download'}) async {
+    final problem = pathProblem(folder);
+    if (problem != null) return {..._refused(problem), 'files': []};
     try {
       final res = await _channel.invokeMapMethod<String, dynamic>('manageStorageFile', {
         'action': 'list',
@@ -61,6 +90,8 @@ class PhoneStorageService {
     required String fileName,
     String folder = 'Download',
   }) async {
+    final problem = pathProblem(folder, fileName);
+    if (problem != null) return _refused(problem);
     try {
       final res = await _channel.invokeMapMethod<String, dynamic>('manageStorageFile', {
         'action': 'delete',

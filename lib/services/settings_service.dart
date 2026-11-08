@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Interaction mode of the home screen.
@@ -20,15 +21,22 @@ enum JarvisScreenStyle { arcReactor, jarvis }
 
 /// Central, observable store for all user-configurable settings.
 ///
-/// Backed by SharedPreferences. Access via [SettingsService.instance] after
-/// calling [init] once at app start.
+/// Backed by SharedPreferences, except secrets (API key, tokens), which live in
+/// the Android Keystore via flutter_secure_storage and are cached in memory so
+/// reads stay synchronous. Access via [SettingsService.instance] after calling
+/// [init] once at app start.
 class SettingsService extends ChangeNotifier {
   SettingsService._();
   static final SettingsService instance = SettingsService._();
 
   SharedPreferences? _prefs;
+  static const _secure = FlutterSecureStorage();
+  final Map<String, String> _secrets = {};
 
   bool get isReady => _prefs != null;
+
+  /// Keys whose values are secrets. Older versions kept them in plain prefs.
+  static const _secretKeys = ['ai_api_key', 'smart_home_ha_token'];
 
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -40,6 +48,34 @@ class SettingsService extends ChangeNotifier {
     for (final key in _removedTelegramKeys) {
       await _prefs?.remove(key);
     }
+    await _loadSecrets();
+  }
+
+  /// Loads secrets from secure storage, moving any left in plain prefs there.
+  /// A plain copy is removed only once the secure write succeeded.
+  Future<void> _loadSecrets() async {
+    for (final key in _secretKeys) {
+      try {
+        final plain = _prefs?.getString(key);
+        if (plain != null) {
+          await _secure.write(key: key, value: plain);
+          await _prefs?.remove(key);
+        }
+        final value = await _secure.read(key: key);
+        if (value != null) _secrets[key] = value;
+      } catch (e) {
+        debugPrint('Secure storage unavailable for $key: $e');
+        final plain = _prefs?.getString(key);
+        if (plain != null) _secrets[key] = plain;
+      }
+    }
+  }
+
+  String _secret(String key) => _secrets[key] ?? '';
+
+  Future<void> _setSecret(String key, String value) async {
+    _secrets[key] = value;
+    await _secure.write(key: key, value: value);
   }
 
   static const _removedTelegramKeys = [
@@ -110,9 +146,9 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  String get apiKey => _prefs?.getString('ai_api_key') ?? '';
+  String get apiKey => _secret('ai_api_key');
   Future<void> setApiKey(String value) async {
-    await _prefs?.setString('ai_api_key', value.trim());
+    await _setSecret('ai_api_key', value.trim());
     notifyListeners();
   }
 
@@ -308,10 +344,9 @@ class SettingsService extends ChangeNotifier {
   }
 
   /// Home Assistant Long-Lived Access Token
-  String get homeAssistantToken =>
-      _prefs?.getString('smart_home_ha_token') ?? '';
+  String get homeAssistantToken => _secret('smart_home_ha_token');
   Future<void> setHomeAssistantToken(String value) async {
-    await _prefs?.setString('smart_home_ha_token', value.trim());
+    await _setSecret('smart_home_ha_token', value.trim());
     notifyListeners();
   }
 

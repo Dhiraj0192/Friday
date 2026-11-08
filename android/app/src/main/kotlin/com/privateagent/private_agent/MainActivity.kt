@@ -405,10 +405,25 @@ class MainActivity : FlutterActivity() {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             }
             else -> {
-                val custom = File(Environment.getExternalStorageDirectory(), name)
+                val root = Environment.getExternalStorageDirectory()
+                val custom = safeChild(root, name.trim())
+                    ?: throw SecurityException("Folder \"$name\" must be a single folder name")
+                if (custom.name.equals("Android", ignoreCase = true)) {
+                    throw SecurityException("The Android folder holds app data")
+                }
                 if (custom.exists() || custom.mkdirs()) custom else Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             }
         }.apply { mkdirs() }
+    }
+
+    /// [dir]/[name] when [name] is one plain name that resolves directly inside
+    /// [dir] (no separators, no "..", no symlink out); null otherwise.
+    private fun safeChild(dir: File, name: String): File? {
+        if (name.isEmpty() || name == "." || name == ".." ||
+            name.contains('/') || name.contains('\\') || name.contains('\u0000')) return null
+        val child = File(dir, name)
+        val parent = dir.canonicalFile
+        return if (child.canonicalFile.parentFile == parent) child else null
     }
 
     private fun obtainSpeechRecognizer(): SpeechRecognizer {
@@ -1207,12 +1222,13 @@ class MainActivity : FlutterActivity() {
                         try {
                             val targetDir = getTargetFolder(folderName)
                             when (action) {
-                                "create", "write" -> {
+                                "create", "write", "edit" -> {
                                     if (fileName.isEmpty()) {
                                         result.error("INVALID_FILE", "File name cannot be empty", null)
                                         return@setMethodCallHandler
                                     }
-                                    val file = File(targetDir, fileName)
+                                    val file = safeChild(targetDir, fileName)
+                                        ?: throw SecurityException("File name \"$fileName\" must be a plain name")
                                     if (append && file.exists()) {
                                         file.appendText(content)
                                     } else {
@@ -1228,7 +1244,8 @@ class MainActivity : FlutterActivity() {
                                     ))
                                 }
                                 "read" -> {
-                                    val file = File(targetDir, fileName)
+                                    val file = safeChild(targetDir, fileName)
+                                        ?: throw SecurityException("File name \"$fileName\" must be a plain name")
                                     if (!file.exists()) {
                                         result.error("NOT_FOUND", "File $fileName not found in $folderName", null)
                                         return@setMethodCallHandler
@@ -1258,7 +1275,8 @@ class MainActivity : FlutterActivity() {
                                     ))
                                 }
                                 "delete" -> {
-                                    val file = File(targetDir, fileName)
+                                    val file = safeChild(targetDir, fileName)
+                                        ?: throw SecurityException("File name \"$fileName\" must be a plain name")
                                     val deleted = if (file.exists()) file.delete() else false
                                     result.success(mapOf(
                                         "success" to deleted,
@@ -1267,6 +1285,8 @@ class MainActivity : FlutterActivity() {
                                 }
                                 else -> result.error("UNKNOWN_ACTION", "Action $action not recognized", null)
                             }
+                        } catch (e: SecurityException) {
+                            result.error("UNSAFE_PATH", e.message, null)
                         } catch (e: Exception) {
                             result.error("STORAGE_ERROR", e.message, null)
                         }
