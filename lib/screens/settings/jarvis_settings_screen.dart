@@ -2195,7 +2195,8 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
               subtitle: const Text(
-                'Forces 100% on-device AI via Ollama (127.0.0.1:11434) & offline TTS — zero data sent outside your device',
+                'Uses only the model downloaded to this phone (Settings > On-phone models) and the phone\'s own voice. '
+                'Listening still uses Google speech recognition.',
                 style: TextStyle(fontSize: 12),
               ),
               value: _settings.localFirstPrivacyMode,

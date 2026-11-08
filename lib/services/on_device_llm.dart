@@ -8,7 +8,8 @@ class OnDeviceLlm {
   OnDeviceLlm._();
   static final OnDeviceLlm instance = OnDeviceLlm._();
 
-  static const defaultContext = 4096;
+  /// Room for an agent step's screen dump as well as the chat.
+  static const defaultContext = 8192;
 
   LlamaEngine? _engine;
   String? _loadedPath;

@@ -6,6 +6,7 @@ import '../../services/personality_service.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/glass_widgets.dart';
 import 'jarvis_settings_screen.dart';
+import 'models_screen.dart';
 import 'permissions_screen.dart';
 
 /// Next-Generation Liquid Glass Settings Screen.
@@ -292,6 +293,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _settings.setProvider(entry.key),
                 ),
             ],
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ModelsScreen()),
+            ),
+            icon: const Icon(Icons.download_for_offline_outlined, size: 18),
+            label: const Text('On-phone models (offline brain)'),
           ),
           const SizedBox(height: 18),
           GlassTextField(

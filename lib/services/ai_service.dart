@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'brain_router.dart';
 import 'bus_service.dart';
 import 'conversational_memory_service.dart';
 import 'hermes_evolution_service.dart';
@@ -630,6 +631,7 @@ class AiService {
   bool get _isLocalBackend {
     final settings = SettingsService.instance;
     if (settings.provider == 'ollama' || settings.localFirstPrivacyMode) return true;
+    if (settings.provider == 'jarvis_laptop') return true; // the laptop holds the key
     final host = Uri.tryParse(settings.baseUrl)?.host ?? '';
     return host == 'localhost' || host == '127.0.0.1' || host == '[::1]';
   }
@@ -802,6 +804,20 @@ ${_aboutJarvis()}You cannot directly tap the screen in this mode. If the user as
     return [];
   }
 
+  /// Where a remote request goes, and with which key. The laptop's brain is
+  /// reached through the Jarvis pairing, with Friday's bus token.
+  (String, String) _endpoint(SettingsService settings) {
+    if (settings.provider == 'jarvis_laptop') {
+      final link = BusService.savedLink;
+      if (link == null) {
+        throw const AiException('Pair Friday with Jarvis first (Settings > Jarvis link).');
+      }
+      final base = link.url.toString().replaceAll(RegExp(r'/+$'), '');
+      return ('$base/api/bus/llm/v1', link.token);
+    }
+    return (settings.baseUrl.replaceAll(RegExp(r'/+$'), ''), settings.apiKey);
+  }
+
   /// Streams conversational tokens in real time (Chat mode typewriter effect).
   Stream<String> chatStream({
     required String message,
@@ -821,24 +837,32 @@ ${_aboutJarvis()}You cannot directly tap the screen in this mode. If the user as
       },
     ];
 
-    if (settings.apiKey.isEmpty && !_isLocalBackend) {
+    if (settings.provider == 'on_device') {
+      try {
+        yield* BrainRouter.instance.localStream(messages, temperature: settings.temperature);
+      } on LocalBrainException catch (e) {
+        throw AiException(e.message);
+      }
+      return;
+    }
+    final (base, apiKey) = _endpoint(settings);
+    if (apiKey.isEmpty && !_isLocalBackend) {
       throw const AiException(
         'No API key configured. Open Settings and add one first.',
       );
     }
-    if (settings.baseUrl.isEmpty) {
+    if (base.isEmpty) {
       throw const AiException('No base URL configured.');
     }
     if (settings.model.isEmpty) {
       throw const AiException('No model name configured.');
     }
 
-    final base = settings.baseUrl.replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.parse('$base/chat/completions');
 
     final headers = <String, String>{
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${settings.apiKey}',
+      'Authorization': 'Bearer $apiKey',
       'User-Agent':
           'Mozilla/5.0 (Linux; Android 14) '
           'AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -873,11 +897,18 @@ ${_aboutJarvis()}You cannot directly tap the screen in this mode. If the user as
 
     if (res.statusCode != 200) {
       final resBody = await res.stream.bytesToString();
+      if (BrainRouter.fallsBack(res.statusCode) && await BrainRouter.instance.hasLocal) {
+        yield* BrainRouter.instance
+            .localStream(messages, temperature: settings.temperature, fallback: true)
+            .handleError((Object e) => throw AiException(e.toString()), test: (e) => e is LocalBrainException);
+        return;
+      }
       final snippet = resBody.length > 300
           ? '${resBody.substring(0, 300)}…'
           : resBody;
       throw AiException(snippet, statusCode: res.statusCode);
     }
+    BrainRouter.instance.remoteAnswered();
 
     String buffer = '';
     await for (final chunk in res.stream.transform(utf8.decoder)) {
@@ -1271,28 +1302,56 @@ The user is viewing an article or screen on their device and requested an execut
   }
 
   /// Shared request/response plumbing for [complete], [chat], and [completeMultimodal].
+  /// The configured brain answers; when it is out of reach (no network, a
+  /// timeout, the server failing) the phone's own model answers instead.
   Future<String> _postChatCompletion(
     List<Map<String, dynamic>> messages,
     SettingsService settings,
   ) async {
-    if (settings.apiKey.isEmpty && !_isLocalBackend) {
+    final router = BrainRouter.instance;
+    try {
+      if (settings.provider == 'on_device') {
+        return await router.local(messages, temperature: settings.temperature);
+      }
+      try {
+        final answer = await _postRemote(messages, settings);
+        router.remoteAnswered();
+        return answer;
+      } on AiException catch (e) {
+        if (!BrainRouter.fallsBack(e.statusCode) ||
+            BrainRouter.split(messages) == null ||
+            !await router.hasLocal) {
+          rethrow;
+        }
+        return await router.local(messages, temperature: settings.temperature, fallback: true);
+      }
+    } on LocalBrainException catch (e) {
+      throw AiException(e.message);
+    }
+  }
+
+  Future<String> _postRemote(
+    List<Map<String, dynamic>> messages,
+    SettingsService settings,
+  ) async {
+    final (base, apiKey) = _endpoint(settings);
+    if (apiKey.isEmpty && !_isLocalBackend) {
       throw const AiException(
         'No API key configured. Open Settings and add one first.',
       );
     }
-    if (settings.baseUrl.isEmpty) {
+    if (base.isEmpty) {
       throw const AiException('No base URL configured.');
     }
     if (settings.model.isEmpty) {
       throw const AiException('No model name configured.');
     }
 
-    final base = settings.baseUrl.replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.parse('$base/chat/completions');
 
     final headers = <String, String>{
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${settings.apiKey}',
+      'Authorization': 'Bearer $apiKey',
       // Some gateways sit behind Cloudflare-style bot protection that
       // rejects non-browser clients by signature (HTTP 403, "error code:
       // 1010"). Presenting a browser-like User-Agent keeps those

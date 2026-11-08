@@ -14,6 +14,8 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
@@ -756,6 +758,17 @@ class MainActivity : FlutterActivity() {
                     "isServiceEnabled" -> result.success(
                         AgentAccessibilityService.isConnected
                     )
+
+                    // For on-phone model downloads: room left in app storage, and
+                    // whether the current network is unmetered (Wi-Fi or similar).
+                    "modelStorage" -> {
+                        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                        val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+                        result.success(mapOf(
+                            "freeBytes" to StatFs(filesDir.path).availableBytes,
+                            "unmetered" to (caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true)
+                        ))
+                    }
 
                     "openAccessibilitySettings" -> {
                         startActivity(

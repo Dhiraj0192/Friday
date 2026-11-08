@@ -88,7 +88,7 @@ class HermesEvolutionService extends ChangeNotifier {
 
 ## 3. Self-Evolving Skill Distillation
 - When recurring tasks succeed, the Hermes Engine distills the parameters into reproducible skills.
-- Failsafe fallback: Degrades gracefully to offline Ollama and system-level TTS when disconnected.
+- Fallback: when the laptop and cloud are out of reach, answers with the model downloaded to the phone, if one is set active.
 ''';
 
   // ---------------------------------------------------------------------------
@@ -222,7 +222,7 @@ ${protocolLines.toString().trim()}
 
 ## 3. Self-Evolving Skill Distillation
 - Auto-distills recurring successful workflows into executable device routines.
-- Failsafe fallback: 100% on-device Ollama local-first privacy mode ready.
+- Fallback: the model downloaded to the phone answers when the network does not.
 
 ---
 *Self-evolved by Hermes Engine on ${DateTime.now().toLocal().toString().split('.').first}*

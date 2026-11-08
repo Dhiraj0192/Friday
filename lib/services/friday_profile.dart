@@ -1,4 +1,5 @@
 import '../models/task_step.dart';
+import 'model_store.dart';
 import 'risk_gate.dart';
 import 'screen_automation_service.dart';
 import 'settings_service.dart';
@@ -15,6 +16,7 @@ class FridayProfile {
     required String model,
     required int maxSteps,
     required bool accessibility,
+    String? offlineModel,
   }) {
     final actions = TaskStep.supportedActions.join(', ');
     final asks = RiskCategory.values.map((c) => '- ${c.describe}').join('\n');
@@ -37,7 +39,7 @@ apps on the phone.
 - An agent loop of up to $maxSteps steps; each step is one of: $actions.
 - Phrase a request to her as one task with a clear end; for a question, she answers
   in a sentence or two when she reaches done.
-- Brain right now: $provider ($model). With no network she has no brain yet.
+- Brain right now: $provider ($model). ${offlineModel == null ? 'With no network she has no brain: no on-phone model is set up.' : 'With no network she answers with $offlineModel on the phone itself: slower, and weaker at driving apps.'}
 - Screen control (accessibility) is ${accessibility ? 'on' : 'OFF, so she cannot drive apps until Sir turns it back on'}.
 
 ## What needs Sir's yes on the phone, whoever asks
@@ -61,6 +63,9 @@ If Sir says no, she answers "Declined by Sir." Reading and opening things are fr
       model: settings.model,
       maxSteps: settings.maxSteps,
       accessibility: await ScreenAutomationService.instance.isServiceEnabled(),
+      offlineModel: (await ModelStore.instance.activeFile()) == null
+          ? null
+          : (await ModelStore.instance.active())?.name,
     );
   }
 }

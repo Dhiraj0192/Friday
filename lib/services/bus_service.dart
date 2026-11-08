@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../models/task_history_entry.dart';
 import 'friday_profile.dart';
 import 'screen_automation_service.dart';
+import 'brain_router.dart';
 import 'settings_service.dart';
 import 'system_control_service.dart';
 import 'system_diagnostics_service.dart';
@@ -535,6 +536,9 @@ class BusService extends ChangeNotifier {
   // Defaults on the phone
   // ------------------------------------------------------------------
 
+  /// The saved pairing, when the Jarvis link is on; else null.
+  static BusLink? get savedLink => _savedLink();
+
   static BusLink? _savedLink() {
     final settings = SettingsService.instance;
     if (!settings.jarvisLinkEnabled || !settings.isJarvisPaired) return null;
@@ -567,7 +571,7 @@ class BusService extends ChangeNotifier {
       if (diag['batteryLevel'] is int && (diag['batteryLevel'] as int) >= 0)
         'battery': diag['batteryLevel'],
       if (diag['isCharging'] is bool) 'charging': diag['isCharging'],
-      'brain': settings.provider,
+      'brain': BrainRouter.instance.offline.value ? 'on_device (laptop out of reach)' : settings.provider,
       'accessibility': await ScreenAutomationService.instance.isServiceEnabled(),
     };
   }

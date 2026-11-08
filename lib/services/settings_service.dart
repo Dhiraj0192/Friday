@@ -118,6 +118,11 @@ class SettingsService extends ChangeNotifier {
       baseUrl: 'https://integrate.api.nvidia.com/v1',
       model: 'meta/llama-3.3-70b-instruct',
     ),
+    // Through the paired laptop: FreeLLMAPI, with the laptop's key (the URL
+    // comes from the Jarvis pairing, so baseUrl here stays empty).
+    'jarvis_laptop': (label: 'Jarvis laptop (FreeLLMAPI)', baseUrl: '', model: 'auto'),
+    // The model downloaded to the phone itself (Settings > On-phone models).
+    'on_device': (label: 'On this phone (offline)', baseUrl: '', model: 'gguf'),
     'ollama': (
       label: 'Ollama (local)',
       baseUrl: 'http://127.0.0.1:11434/v1',
@@ -130,7 +135,7 @@ class SettingsService extends ChangeNotifier {
   Future<void> setProvider(String value) async {
     await _prefs?.setString('ai_provider', value);
     final preset = providers[value];
-    if (preset != null && preset.baseUrl.isNotEmpty) {
+    if (preset != null && (preset.baseUrl.isNotEmpty || preset.model.isNotEmpty)) {
       await _prefs?.setString('ai_base_url', preset.baseUrl);
       await _prefs?.setString('ai_model', preset.model);
     }
@@ -288,14 +293,14 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Local-First Privacy Mode: forces on-device processing via local Ollama
-  /// (127.0.0.1:11434) and offline voice synthesis, zero cloud data leakage.
+  /// Local-First Privacy Mode: answers only with the model downloaded to the
+  /// phone, and speaks with the phone's own voice.
   bool get localFirstPrivacyMode =>
       _prefs?.getBool('local_first_privacy_mode') ?? false;
   Future<void> setLocalFirstPrivacyMode(bool value) async {
     await _prefs?.setBool('local_first_privacy_mode', value);
     if (value) {
-      await setProvider('ollama');
+      await setProvider('on_device');
       await setUseNeuralVoice(false);
     }
     notifyListeners();
