@@ -36,7 +36,7 @@ class SettingsService extends ChangeNotifier {
   bool get isReady => _prefs != null;
 
   /// Keys whose values are secrets. Older versions kept them in plain prefs.
-  static const _secretKeys = ['ai_api_key', 'smart_home_ha_token'];
+  static const _secretKeys = ['ai_api_key', 'smart_home_ha_token', 'jarvis_bus_token'];
 
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -334,6 +334,38 @@ class SettingsService extends ChangeNotifier {
   bool get voiceFeedback => _prefs?.getBool('voice_feedback') ?? false;
   Future<void> setVoiceFeedback(bool value) async {
     await _prefs?.setBool('voice_feedback', value);
+    notifyListeners();
+  }
+
+  // ------------------------------------------------------------------
+  // Jarvis link: the bus to Jarvis on Sir's laptop (see BusService)
+  // ------------------------------------------------------------------
+
+  /// The laptop phone server's https://….ts.net address, from the pairing code.
+  String get jarvisBusUrl => _prefs?.getString('jarvis_bus_url') ?? '';
+
+  /// Friday's own bus token, revocable on the laptop apart from anything else.
+  String get jarvisBusToken => _secret('jarvis_bus_token');
+
+  bool get isJarvisPaired => jarvisBusUrl.isNotEmpty && jarvisBusToken.isNotEmpty;
+
+  Future<void> setJarvisLink(String url, String token) async {
+    await _setSecret('jarvis_bus_token', token);
+    await _prefs?.setString('jarvis_bus_url', url);
+    notifyListeners();
+  }
+
+  Future<void> clearJarvisLink() async {
+    _secrets.remove('jarvis_bus_token');
+    await _secure.delete(key: 'jarvis_bus_token');
+    await _prefs?.remove('jarvis_bus_url');
+    notifyListeners();
+  }
+
+  /// Kill switch: off, Friday neither listens to Jarvis nor sends to him.
+  bool get jarvisLinkEnabled => _prefs?.getBool('jarvis_link_enabled') ?? true;
+  Future<void> setJarvisLinkEnabled(bool value) async {
+    await _prefs?.setBool('jarvis_link_enabled', value);
     notifyListeners();
   }
 

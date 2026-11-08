@@ -69,6 +69,9 @@ class TaskExecutor extends ChangeNotifier {
   /// that asked for it (the Jarvis bus) can report the result back.
   void Function(String origin, TaskHistoryEntry entry)? onTaskFinished;
 
+  /// What the agent said when it marked the last goal done, if anything.
+  String? lastAnswer;
+
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_historyKey);
@@ -293,6 +296,7 @@ class TaskExecutor extends ChangeNotifier {
     _recovery.reset();
     _origin = origin;
     _allowed.clear();
+    lastAnswer = null;
     _startedAt = DateTime.now();
     logs.clear();
     _log(ChatMessage.user(goal));
@@ -456,6 +460,8 @@ class TaskExecutor extends ChangeNotifier {
       );
 
       if (decision.action == TaskStep.actionDone || decision.isComplete) {
+        final said = decision.reasoning.trim();
+        lastAnswer = said.isEmpty ? null : said;
         _log(ChatMessage.system('Goal marked complete by the agent.'));
         await _learnSkillIfWorthIt(goal, settings);
         return TaskStatus.success;

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import '../../services/bus_service.dart';
 import '../../services/personality_service.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/glass_widgets.dart';
@@ -22,6 +23,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _baseUrlController;
   late final TextEditingController _apiKeyController;
   late final TextEditingController _modelController;
+  final _pairController = TextEditingController();
+  String? _pairError;
 
   bool _obscureKey = true;
 
@@ -48,12 +51,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     _settings.addListener(_onSettingsChanged);
     PersonalityService.instance.addListener(_onServiceChanged);
+    BusService.instance.addListener(_onServiceChanged);
   }
 
   @override
   void dispose() {
     _settings.removeListener(_onSettingsChanged);
     PersonalityService.instance.removeListener(_onServiceChanged);
+    BusService.instance.removeListener(_onServiceChanged);
+    _pairController.dispose();
     for (final c in [
       _baseUrlController,
       _apiKeyController,
@@ -191,6 +197,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: const Color(0xFF00E5FF),
                 ),
                 _jarvisCard(),
+                const SizedBox(height: 22),
+
+                _sectionHeader(
+                  icon: Icons.hub_rounded,
+                  title: 'Jarvis Link',
+                  color: const Color(0xFFF59E0B),
+                ),
+                _jarvisLinkCard(),
                 const SizedBox(height: 22),
 
                 _sectionHeader(
@@ -519,6 +533,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _pairJarvis() async {
+    try {
+      final link = BusCodec.decodePairing(_pairController.text);
+      await _settings.setJarvisLink(link.url.toString(), link.token);
+      _pairController.clear();
+      setState(() => _pairError = null);
+      BusService.instance.restart();
+    } on FormatException catch (e) {
+      setState(() => _pairError = e.message);
+    }
+  }
+
+  Future<void> _unpairJarvis() async {
+    BusService.instance.stop();
+    await _settings.clearJarvisLink();
+  }
+
+  String _busStatusText() {
+    final bus = BusService.instance;
+    if (!_settings.isJarvisPaired) return 'Not paired. On the laptop run: server.py pair-friday';
+    if (!_settings.jarvisLinkEnabled) return 'Switched off. Jarvis cannot reach Friday.';
+    final where = Uri.tryParse(_settings.jarvisBusUrl)?.host ?? '';
+    return switch (bus.state) {
+      BusState.online => bus.jarvisRunning ? 'Connected to Jarvis · $where' : 'Laptop reached; Jarvis is not running',
+      BusState.connecting => 'Connecting to $where…',
+      BusState.offline => bus.lastError ?? 'Out of reach; retrying',
+      BusState.off => 'Idle',
+    };
+  }
+
+  Widget _jarvisLinkCard() {
+    final paired = _settings.isJarvisPaired;
+    return GlassCard(
+      borderRadius: 22,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _busStatusText(),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (paired) ...[
+            GlassSwitchTile(
+              title: 'Jarvis link',
+              subtitle: 'Jarvis may ask Friday to read and open things; acting still needs your yes',
+              icon: Icons.hub_rounded,
+              value: _settings.jarvisLinkEnabled,
+              onChanged: (v) async {
+                await _settings.setJarvisLinkEnabled(v);
+                BusService.instance.restart();
+              },
+            ),
+            TextButton.icon(
+              onPressed: _unpairJarvis,
+              icon: const Icon(Icons.link_off_rounded, size: 18),
+              label: const Text('Unpair'),
+            ),
+          ] else ...[
+            GlassTextField(
+              controller: _pairController,
+              labelText: 'Pairing code',
+              hintText: 'friday1:…',
+              prefixIcon: const Icon(Icons.qr_code_rounded, size: 20),
+              keyboardType: TextInputType.visiblePassword,
+            ),
+            if (_pairError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  _pairError!,
+                  style: const TextStyle(fontSize: 11.5, color: Colors.amber),
+                ),
+              ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _pairJarvis,
+                icon: const Icon(Icons.link_rounded, size: 18),
+                label: const Text('Pair with Jarvis'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

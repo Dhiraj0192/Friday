@@ -44,6 +44,7 @@ import 'proactive_agent_service.dart';
 import 'routine_automation_service.dart';
 import 'screen_automation_service.dart';
 import 'sentry_service.dart';
+import 'bus_service.dart';
 import 'settings_service.dart';
 import 'skill_memory_service.dart';
 import 'smart_home_service.dart';
@@ -780,6 +781,41 @@ class JarvisService extends ChangeNotifier {
     }
   }
 
+  /// "ask Jarvis …" / "tell Jarvis …": (ask?, the words for him), or null.
+  static (bool, String)? jarvisBusCommand(String command) {
+    final m = RegExp(
+      r'^(?:(?:hey|ok|okay)\s+)?(?:friday[,\s]+)?(?:please\s+)?(ask|tell)\s+jarvis\b[\s,:]*(.*)$',
+      caseSensitive: false,
+    ).firstMatch(command.trim());
+    final rest = m?.group(2)?.trim() ?? '';
+    if (m == null || rest.isEmpty) return null;
+    return (m.group(1)!.toLowerCase() == 'ask', rest);
+  }
+
+  Future<void> _relayToJarvis(bool ask, String text) async {
+    final bus = BusService.instance;
+    String reply;
+    if (!SettingsService.instance.isJarvisPaired) {
+      reply = 'The Jarvis link is not set up, sir. Pair me in Settings.';
+    } else if (!SettingsService.instance.jarvisLinkEnabled) {
+      reply = 'The Jarvis link is switched off, sir.';
+    } else if (!ask) {
+      await bus.tellJarvis(text);
+      reply = bus.isOnline ? 'Passed to Jarvis, sir.' : 'Jarvis is out of reach; he will have it when the laptop is back.';
+    } else {
+      _statusMessage = 'BUS // ASKING JARVIS';
+      notifyListeners();
+      reply = await bus.askJarvis(text) ??
+          'Jarvis has not answered yet, sir. I will pass on his reply when it comes.';
+    }
+    _lastJarvisSpeech = reply;
+    _phase = JarvisPhase.speaking;
+    _statusMessage = 'BUS // JARVIS';
+    notifyListeners();
+    await _voice.speak(reply);
+    await _startFollowUpListening();
+  }
+
   /// Processes a voice command through JARVIS intelligence.
   Future<void> processCommand(String command) async {
     _wakeUp();
@@ -828,6 +864,13 @@ class JarvisService extends ChangeNotifier {
           : 'READY // TAP TO TALK';
       notifyListeners();
       await _voice.speak(reply);
+      return;
+    }
+
+    // 2a. Over the bus to Jarvis on the laptop.
+    final toJarvis = jarvisBusCommand(trimmed);
+    if (toJarvis != null) {
+      await _relayToJarvis(toJarvis.$1, toJarvis.$2);
       return;
     }
 

@@ -6,6 +6,7 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 import 'app.dart';
 import 'overlay/overlay_app.dart';
+import 'services/bus_service.dart';
 import 'services/calendar_reminder_service.dart';
 import 'services/hermes_evolution_service.dart';
 import 'services/jarvis_service.dart';
@@ -26,6 +27,7 @@ Future<void> main() async {
   final executor = TaskExecutor.instance;
   await executor.init();
   RiskApproval.install();
+  BusService.instance.start();
 
   await HermesEvolutionService.instance.init();
   await CalendarReminderService.instance.init();
