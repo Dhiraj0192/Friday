@@ -81,6 +81,10 @@ dependencies:
   uuid: ^4.6.0
   crypto: ^3.0.8
 
+  # On-phone models: llama.cpp (GGUF) through FFI; prebuilt, sha256-checked native
+  # libraries fetched by its build hook (see hooks: below). Pinned exactly.
+  llamadart: 0.17.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -137,3 +141,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# llamadart's build hook: llama.cpp only (no LiteRT-LM), CPU on the phone.
+hooks:
+  user_defines:
+    llamadart:
+      llamadart_native_runtimes: [llama_cpp]
