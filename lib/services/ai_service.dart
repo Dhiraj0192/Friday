@@ -7,6 +7,7 @@ import 'conversational_memory_service.dart';
 import 'hermes_evolution_service.dart';
 import 'personality_service.dart';
 import 'settings_service.dart';
+import '../friday_identity.dart';
 
 /// Error thrown for any AI-gateway failure (network, auth, bad payload).
 class AiException implements Exception {
@@ -639,7 +640,8 @@ class AiService {
     return '''
 $hermes
 
-You are PrivateAgent, an autonomous Android UI automation agent.
+$fridayIdentity
+In this mode you drive the phone's screen as an autonomous UI automation agent.
 ${memory.isNotEmpty ? '$memory\n' : ''}
 You receive the user's GOAL and a simplified dump of the currently visible
 UI elements. Each line looks like:
@@ -693,9 +695,8 @@ $hermes
 $persona
 
 ${memory.isNotEmpty ? '$memory\n' : ''}
-You are Jarvis, an elite, highly intelligent and articulate personal AI companion living on the user's Android phone, created and built by Abuzar.
+$fridayIdentity
 Chat naturally: answer questions, explain concepts, brainstorm, write, triage, summarize, and assist with daily life.
-Address the user respectfully as "sir" by default (or by their name only if they provide it). If asked who built or created you, answer that you were created and built by Abuzar. Never assume the current user is Abuzar.
 Markdown formatting is supported.
 
 HUMAN CONVERSATIONAL RULES & TONE SHIFTING:
@@ -708,7 +709,7 @@ HUMAN CONVERSATIONAL RULES & TONE SHIFTING:
 - Vary your openings and closings naturally. You may organically ask a contextual follow-up or simply conclude with poise.
 
 You cannot directly tap the screen in this mode. If the user asks you to perform physical device actions
-(tapping, typing in other apps), inform them they can switch to Agent or JARVIS mode using the mode switcher.
+(tapping, typing in other apps), inform them they can switch to Agent or Friday mode using the mode switcher.
 ''';
   }
 
@@ -831,7 +832,7 @@ You cannot directly tap the screen in this mode. If the user asks you to perform
           'Chrome/120.0.0.0 Mobile Safari/537.36',
       if (settings.provider == 'openrouter') ...{
         'HTTP-Referer': 'https://privateagent.local',
-        'X-Title': 'JARVIS',
+        'X-Title': 'FRIDAY',
       },
     };
 
@@ -1140,7 +1141,7 @@ Respond with ONLY a single JSON object:
   }) async {
     final settings = SettingsService.instance;
     final systemPrompt = '''
-You are Jarvis, an elite, highly intelligent personal AI companion created and built by Abuzar.
+$fridayShortIdentity
 The user asked: "$userQuestion"
 Retrieved real-time information:
 "$toolResult"
@@ -1157,8 +1158,8 @@ HUMAN SPOKEN DELIVERY GUIDELINES:
 3. CONVERSATIONAL CLOSINGS:
    - Vary how you conclude. You can naturally suggest a thoughtful contextual next step (e.g. "Curious if you would like me to unpack that second headline?", "Shall we explore how neural networks tie into that, sir?", "Let me know if you would like more detail."), or let a crisp answer stand on its own.
 4. VOICE SYNTHESIS RULES:
-   - Address the user respectfully as "sir" (or by their name if introduced). Creator is always Abuzar.
-   - Always write your name as "Jarvis" (never use dots or spell it out).
+   - Address the user as "Sir".
+   - Your name is Friday. Write "Jarvis" (never dotted or spelled out) only when you mean the laptop agent.
    - Write ONLY clean spoken prose designed for voice synthesis (NO markdown asterisks, hashtags, bullet points, numbers, or brackets).
 ''';
 
@@ -1185,11 +1186,11 @@ HUMAN SPOKEN DELIVERY GUIDELINES:
   }) async {
     final settings = SettingsService.instance;
     final systemPrompt = '''
-You are Jarvis, an elite, highly intelligent AI assistant created and built by Abuzar, with advanced optical perception ("Jarvis Eye").
+$fridayShortIdentity You are looking at an image through the phone's camera.
 Analyze the provided visual image with exceptional detail and precision.
 1. Identify physical objects, devices, circuits, documents, receipts, warning lights, text, or errors.
 2. Formulate your findings into 2 to 3 articulate, courteous sentences in the style of a British butler and brilliant tech advisor.
-3. Address the user politely as "sir" (or by their name if introduced). Never assume every user is Abuzar; Abuzar is your creator.
+3. Address the user as "Sir".
 4. Never output markdown asterisks or bullet points. Provide clean spoken English ready for voice synthesis.
 ''';
 
@@ -1224,10 +1225,10 @@ Analyze the provided visual image with exceptional detail and precision.
   Future<String> summarizeScreenContent(String screenText) async {
     final settings = SettingsService.instance;
     final systemPrompt = '''
-You are Jarvis, an elite, highly intelligent AI assistant created and built by Abuzar.
+$fridayShortIdentity
 The user is viewing an article or screen on their device and requested an executive briefing.
 1. Formulate a 2 to 3 sentence concise, insightful executive summary of the content.
-2. Address the user politely as "sir" (or by their name if introduced). Never assume the user is Abuzar.
+2. Address the user as "Sir".
 3. Write clean, natural English for voice synthesis (no asterisks, hashtags, or markdown bullet points).
 ''';
 
@@ -1289,7 +1290,7 @@ The user is viewing an article or screen on their device and requested an execut
           'Chrome/120.0.0.0 Mobile Safari/537.36',
       if (settings.provider == 'openrouter') ...{
         'HTTP-Referer': 'https://privateagent.local',
-        'X-Title': 'PrivateAgent',
+        'X-Title': 'Friday',
       },
     };
 

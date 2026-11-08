@@ -47,7 +47,7 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
     <application
-        android:label="JARVIS"
+        android:label="Friday"
         android:name="${applicationName}"
         android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true"
@@ -74,7 +74,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- PrivateAgent accessibility service: reads screen hierarchy and
+        <!-- Friday accessibility service: reads screen hierarchy and
              performs gestures (tap, swipe, scroll, type) on behalf of the user. -->
         <service
             android:name=".AgentAccessibilityService"
@@ -96,13 +96,13 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Shows the PrivateAgent floating control bubble and transcript panel on top of other apps while the agent performs UI automation." />
+                android:value="Shows the Friday floating control bubble and transcript panel on top of other apps while the agent performs UI automation." />
         </service>
 
         <!-- Notification Listener for live email & SMS inbox triage -->
         <service
             android:name=".InboxNotificationListenerService"
-            android:label="PrivateAgent Email &amp; SMS Listener"
+            android:label="Friday Email &amp; SMS Listener"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="true">
             <intent-filter>

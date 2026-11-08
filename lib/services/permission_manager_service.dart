@@ -99,7 +99,7 @@ class PermissionManagerService extends ChangeNotifier {
       AppPermissionInfo(
         type: AppPermissionType.accessibility,
         title: 'Accessibility Service',
-        description: 'Empowers PrivateAgent to tap, type, scroll, and execute autonomous tasks across apps.',
+        description: 'Empowers Friday to tap, type, scroll, and execute autonomous tasks across apps.',
         icon: Icons.accessibility_new_rounded,
         isGranted: accessibilityStatus,
         isSystemSettingsOnly: true,

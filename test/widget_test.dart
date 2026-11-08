@@ -114,7 +114,7 @@ void main() {
     await tester.pumpWidget(const PrivateAgentApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Meet J.A.R.V.I.S.'), findsOneWidget);
+    expect(find.text('Meet Friday'), findsOneWidget);
     expect(find.text('Continue'), findsOneWidget);
   });
 

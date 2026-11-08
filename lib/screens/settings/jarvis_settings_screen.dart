@@ -93,7 +93,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
             ),
             const SizedBox(width: 10),
             const Text(
-              'J.A.R.V.I.S.',
+              'FRIDAY',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
@@ -105,7 +105,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
         children: [
-          _sectionTitle('JARVIS Screen (HUD Visual Style)'),
+          _sectionTitle('Friday Screen (HUD Visual Style)'),
           _screenStyleCard(theme),
           const SizedBox(height: 20),
           _sectionTitle('Always-On Voice & Speech Synthesis'),
@@ -203,12 +203,12 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'JARVIS Screen Mode',
+                        'Friday Screen Mode',
                         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Choose your visual hologram display for JARVIS mode',
+                        'Choose your visual hologram display for Friday mode',
                         style: TextStyle(
                           fontSize: 12,
                           color: theme.colorScheme.onSurfaceVariant,
@@ -493,7 +493,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
               segments: const [
                 ButtonSegment(
                   value: PersonalityArchetype.jarvis,
-                  label: Text('JARVIS', style: TextStyle(fontSize: 11)),
+                  label: Text('FRIDAY', style: TextStyle(fontSize: 11)),
                   icon: Icon(Icons.shield_outlined, size: 16),
                 ),
                 ButtonSegment(
@@ -904,7 +904,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
                       }
                       await FlutterOverlayWindow.showOverlay(
                         enableDrag: true,
-                        overlayTitle: 'J.A.R.V.I.S. HUD',
+                        overlayTitle: 'Friday HUD',
                         overlayContent: 'Stark Arc Reactor Core Active',
                         flag: OverlayFlag.defaultFlag,
                         visibility: NotificationVisibility.visibilityPublic,
@@ -920,7 +920,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Floats over any browser or app. Glows Cyan on standby, turns Emerald Green when listening to your voice, and transitions to Solar Gold when computing or speaking.\n\nTap "Summarize Screen" from any webpage or article to receive an articulate executive briefing spoken aloud by J.A.R.V.I.S.',
+              'Floats over any browser or app. Glows Cyan on standby, turns Emerald Green when listening to your voice, and transitions to Solar Gold when computing or speaking.\n\nTap "Summarize Screen" from any webpage or article to receive an articulate executive briefing spoken aloud by Friday',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 height: 1.4,
@@ -986,7 +986,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'J.A.R.V.I.S. no longer navigates phone settings or taps the screen for routine diagnostic tasks. Hardware specifications, top launcher applications, screen time statistics, and file system creation execute via direct Android APIs.',
+              'Friday no longer navigates phone settings or taps the screen for routine diagnostic tasks. Hardware specifications, top launcher applications, screen time statistics, and file system creation execute via direct Android APIs.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 height: 1.4,
@@ -1040,7 +1040,7 @@ class _JarvisSettingsScreenState extends State<JarvisSettingsScreen> {
                   icon: const Icon(Icons.note_add_outlined, size: 14),
                   label: const Text('Write Song File', style: TextStyle(fontSize: 11)),
                   onPressed: () async {
-                    const song = 'Electric Horizons by J.A.R.V.I.S.\nNeon pulses through the titanium frame...';
+                    const song = 'Electric Horizons by Friday\nNeon pulses through the titanium frame...';
                     final res = await PhoneStorageService.instance.createFile(
                       fileName: 'song.txt',
                       content: song,

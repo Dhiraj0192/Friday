@@ -99,7 +99,7 @@ class SystemControlService {
   Future<bool> setAlarm({
     required int hour,
     required int minute,
-    String label = 'PrivateAgent alarm',
+    String label = 'Friday alarm',
   }) async {
     if (!Platform.isAndroid) return false;
     try {

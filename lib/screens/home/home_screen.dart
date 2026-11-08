@@ -191,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           width: 120,
           alignment: OverlayAlignment.centerRight,
           flag: OverlayFlag.defaultFlag,
-          overlayTitle: 'PrivateAgent',
+          overlayTitle: 'Friday',
           overlayContent: 'Agent bubble active',
           enableDrag: true,
           positionGravity: PositionGravity.auto,
@@ -224,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         title: Row(
           children: [
             Text(
-              isJarvis ? 'JARVIS' : 'PrivateAgent',
+              isJarvis ? 'FRIDAY' : 'Friday',
               style: isJarvis
                   ? const TextStyle(
                       color: Color(0xFF00E5FF),
@@ -308,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'PrivateAgent',
+                    'Friday',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
@@ -673,7 +673,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             '“Play Closer on YouTube”\n'
                             '“Open Settings and show storage info”'
                       : 'Ask anything — questions, ideas, coding, or writing.\n'
-                            'Switch to Agent or JARVIS mode for autonomous device control.',
+                            'Switch to Agent or Friday mode for autonomous device control.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,

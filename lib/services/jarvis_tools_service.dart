@@ -177,7 +177,7 @@ class JarvisToolsService {
           final sUrl = Uri.parse(
             'https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=$encoded&utf8=&format=json',
           );
-          final resp = await _client.get(sUrl, headers: {'User-Agent': 'JARVIS-PrivateAgent/1.0'}).timeout(const Duration(seconds: 4));
+          final resp = await _client.get(sUrl, headers: {'User-Agent': 'Friday/1.0'}).timeout(const Duration(seconds: 4));
           if (resp.statusCode == 200) {
             final json = jsonDecode(resp.body);
             final searchList = json?['query']?['search'] as List?;
@@ -187,7 +187,7 @@ class JarvisToolsService {
                 final pageUrl = Uri.parse(
                   'https://en.wikipedia.org/api/rest_v1/page/summary/${Uri.encodeComponent(topTitle.replaceAll(' ', '_'))}',
                 );
-                final pageResp = await _client.get(pageUrl, headers: {'User-Agent': 'JARVIS-PrivateAgent/1.0'}).timeout(const Duration(seconds: 4));
+                final pageResp = await _client.get(pageUrl, headers: {'User-Agent': 'Friday/1.0'}).timeout(const Duration(seconds: 4));
                 if (pageResp.statusCode == 200) {
                   final pageData = jsonDecode(pageResp.body);
                   final extract = pageData?['extract']?.toString() ?? '';

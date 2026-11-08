@@ -96,7 +96,7 @@ class JarvisService extends ChangeNotifier {
   String _lastJarvisSpeech = 'At your service, sir. Say "Hey Jarvis" anytime.';
   String get lastJarvisSpeech => _lastJarvisSpeech;
 
-  String _statusMessage = 'STANDBY // SAY "HEY JARVIS"';
+  String _statusMessage = 'STANDBY // SAY "HEY FRIDAY"';
   String get statusMessage => _statusMessage;
 
   String? _currentTaskGoal;
@@ -246,7 +246,7 @@ class JarvisService extends ChangeNotifier {
       if (_phase != JarvisPhase.executing) {
         _isAwake = false;
         _statusMessage = _shouldListenContinuously
-            ? 'STANDBY // SAY "HEY JARVIS"'
+            ? 'STANDBY // SAY "HEY FRIDAY"'
             : 'READY // TAP TO TALK';
         notifyListeners();
       }
@@ -263,7 +263,7 @@ class JarvisService extends ChangeNotifier {
     _awakeTimer?.cancel();
     _lastUserSpeech = '';
     _statusMessage = _shouldListenContinuously
-        ? 'STANDBY // SAY "HEY JARVIS"'
+        ? 'STANDBY // SAY "HEY FRIDAY"'
         : 'READY // TAP TO TALK';
     _phase = JarvisPhase.idle;
     notifyListeners();
@@ -311,80 +311,48 @@ class JarvisService extends ChangeNotifier {
     stopListening();
   }
 
-  /// Extracts the wake word command from speech with robust normalization.
-  /// Supports J.A.R.V.I.S., phonetic variants, and Google Assistant wake phrases.
-  /// Handles punctuation (commas like "Hey, Jarvis"), accents, and alternate STT hypotheses.
+  /// Finds Friday's wake word in [speech]. "Friday" is also a weekday, so it
+  /// only counts at the start ("Hey Friday, ...", "Friday ...") or the end
+  /// ("..., Friday") of what was said, never in the middle ("remind me on
+  /// Friday to ..."). "Jarvis" is not a wake word: he is the laptop agent, and
+  /// "Friday, ask Jarvis ..." keeps his name in the command.
   /// Returns:
-  /// - '' (empty string) if only wake word / greeting was spoken (to wake up and start listening)
-  /// - the extracted user command if wake word + command was spoken
+  /// - '' (empty string) if only the wake word was spoken (wake up and listen)
+  /// - the command if the wake word came with one
   /// - null if no wake word was spoken
   static String? extractWakeCommand(String speech) {
-    final raw = speech.trim();
-    if (raw.isEmpty) return null;
-
-    // 1. Normalize acronyms, punctuation, and multiple spaces
-    var normalized = raw
-        .replaceAll(
-          RegExp(r'j\s*\.?\s*a\s*\.?\s*r\s*\.?\s*v\s*\.?\s*i\s*\.?\s*s\.?', caseSensitive: false),
-          'jarvis',
-        )
-        .replaceAll(RegExp(r'[,;:!?]+'), ' ')
+    final normalized = speech
+        .trim()
+        .replaceAll(RegExp(r'[,;:!?.]+'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-
     if (normalized.isEmpty) return null;
 
-    // 2. Comprehensive Wake Phrase Pattern
-    // Matches:
-    // - (hey | hello | hi | ok | okay | yo | listen | wake up | dear) + [optional space] + (jarvis | javis | jervis | jarves | jarvice | travis | service | davis | davies | harvest | jarvi | google)
-    // - standalone (jarvis | javis | jervis | jarves | jarvice | charvis | garvis | jarvi)
-    // - (wake up jarvis | jarvis wake up | jarvis please)
-    final wakePattern = RegExp(
-      r'\b(?:(?:hey|hello|hi|okay|ok|yo|listen|wake\s+up|dear)\s+(?:jarvis|javis|jervis|jarves|jarvice|charvis|garvis|gervis|travis|service|davis|davies|harvest|jarvi|google)|(?:jarvis|javis|jervis|jarves|jarvice|charvis|garvis|jarvi)\s+(?:wake\s+up|please|online)|(?:jarvis|javis|jervis|jarves|jarvice|charvis|garvis|jarvi)|(?:hey|okay|ok|hello|hi)\s+google)\b',
-      caseSensitive: false,
-    );
-
-    final match = wakePattern.firstMatch(normalized);
-    if (match == null) return null;
-
-    // Command after wake word: e.g. "Hey Jarvis, what time is it" -> "what time is it"
-    final after = normalized
-        .substring(match.end)
-        .replaceAll(RegExp(r'^[,\s!?\-:;]+'), '')
-        .trim();
-
-    // Command before wake word: e.g. "What time is it, Jarvis" -> "What time is it"
-    final before = normalized
-        .substring(0, match.start)
-        .replaceAll(RegExp(r'[,\s!?\-:;]+$'), '')
-        .trim();
-
-    if (after.isNotEmpty) {
-      final cleanAfter = after.replaceFirst(
-        RegExp(r'^(?:wake\s+up|please|online)\s*', caseSensitive: false),
-        '',
-      ).trim();
-      return cleanAfter.isNotEmpty ? cleanAfter : '';
+    final leading = _wakeAtStart.firstMatch(normalized);
+    if (leading != null) {
+      return normalized
+          .substring(leading.end)
+          .replaceFirst(RegExp(r'^(?:wake\s+up|please|online)\b\s*', caseSensitive: false), '')
+          .trim();
     }
-
-    if (before.isNotEmpty) {
-      final lowerBefore = before.toLowerCase();
-      // If "before" was just a greeting prefix (e.g. "Hey" from "Hey, Jarvis"), return empty string so it wakes up
-      if (lowerBefore == 'hey' ||
-          lowerBefore == 'hello' ||
-          lowerBefore == 'hi' ||
-          lowerBefore == 'ok' ||
-          lowerBefore == 'okay' ||
-          lowerBefore == 'yo' ||
-          lowerBefore == 'wake up') {
-        return '';
-      }
-      return before;
+    final trailing = _wakeAtEnd.firstMatch(normalized);
+    if (trailing != null) {
+      return normalized.substring(0, trailing.start).trim();
     }
-
-    // Only wake word was spoken: e.g. "Hey Jarvis" or "Jarvis"
-    return '';
+    return null;
   }
+
+  static const _wakeName = r'(?:friday|fryday|frieda|freiday)';
+  static final _wakeAtStart = RegExp(
+    r'^(?:(?:hey|hello|hi|okay|ok|yo|listen|wake\s+up)\s+)?' + _wakeName + r'\b',
+    caseSensitive: false,
+  );
+  // "..., Friday" wakes her; "... on Friday" / "by next Friday" is a date.
+  static final _wakeAtEnd = RegExp(
+    r'(?<!\b(?:on|this|next|last|by|until|till|every|before|after|from|since)\s)'
+    r'\b(?:(?:hey|ok|okay)\s+)?' + _wakeName + r'(?:\s+(?:please|wake\s+up))?$',
+    caseSensitive: false,
+  );
 
   String? _extractWakeCommand(String speech) => extractWakeCommand(speech);
 
@@ -411,7 +379,7 @@ class JarvisService extends ChangeNotifier {
     startListening();
     // Arm mid-air proximity sensor for zero-touch gestures while in JARVIS mode
     unawaited(AirGestureService.instance.start());
-    _statusMessage = 'STANDBY // SAY "HEY JARVIS"';
+    _statusMessage = 'STANDBY // SAY "HEY FRIDAY"';
     notifyListeners();
   }
 
@@ -441,7 +409,7 @@ class JarvisService extends ChangeNotifier {
       const msg =
           'Always-On continuous listening active, sir. Say "Hey Jarvis" anytime.';
       _lastJarvisSpeech = msg;
-      _statusMessage = 'STANDBY // SAY "HEY JARVIS"';
+      _statusMessage = 'STANDBY // SAY "HEY FRIDAY"';
       notifyListeners();
       await _voice.speak(msg);
     } else {
@@ -584,7 +552,7 @@ class JarvisService extends ChangeNotifier {
       _statusMessage = 'LISTENING // AUDIO RECEPTORS ACTIVE';
     } else {
       _phase = JarvisPhase.idle;
-      _statusMessage = 'STANDBY // SAY "HEY JARVIS"';
+      _statusMessage = 'STANDBY // SAY "HEY FRIDAY"';
     }
     notifyListeners();
 
@@ -648,7 +616,7 @@ class JarvisService extends ChangeNotifier {
             _statusMessage = _shouldListenContinuously
                 ? (_isAwake
                     ? 'LISTENING // AUDIO RECEPTORS ACTIVE'
-                    : 'STANDBY // SAY "HEY JARVIS"')
+                    : 'STANDBY // SAY "HEY FRIDAY"')
                 : 'READY // TAP TO TALK';
             notifyListeners();
           }
@@ -785,7 +753,7 @@ class JarvisService extends ChangeNotifier {
     if (_phase == JarvisPhase.listening) {
       _phase = _executor.isBusy ? JarvisPhase.executing : JarvisPhase.idle;
       _statusMessage = _shouldListenContinuously
-          ? 'STANDBY // SAY "HEY JARVIS"'
+          ? 'STANDBY // SAY "HEY FRIDAY"'
           : 'READY // TAP TO TALK';
       notifyListeners();
     }
@@ -806,7 +774,7 @@ class JarvisService extends ChangeNotifier {
       await _voice.stopSpeaking();
       _phase = JarvisPhase.idle;
       _statusMessage = _shouldListenContinuously
-          ? 'STANDBY // SAY "HEY JARVIS"'
+          ? 'STANDBY // SAY "HEY FRIDAY"'
           : 'READY // TAP TO TALK';
       notifyListeners();
     }
@@ -856,7 +824,7 @@ class JarvisService extends ChangeNotifier {
       _lastJarvisSpeech = reply;
       _phase = JarvisPhase.speaking;
       _statusMessage = _shouldListenContinuously
-          ? 'STANDBY // SAY "HEY JARVIS"'
+          ? 'STANDBY // SAY "HEY FRIDAY"'
           : 'READY // TAP TO TALK';
       notifyListeners();
       await _voice.speak(reply);
@@ -1199,7 +1167,7 @@ class JarvisService extends ChangeNotifier {
       return;
     }
 
-    // 3e-2b. Creator & Builder Identity (Built by Abuzar)
+    // 3e-2b. Creator & Builder Identity
     if (lower.contains('who built you') ||
         lower.contains('who created you') ||
         lower.contains('who made you') ||
@@ -1219,7 +1187,7 @@ class JarvisService extends ChangeNotifier {
       final reply = PersonalityService.instance.getCreatorAnswer();
       _lastJarvisSpeech = reply;
       _phase = JarvisPhase.speaking;
-      _statusMessage = 'CREATOR // ABUZAR';
+      _statusMessage = 'ORIGIN // FRIDAY';
       notifyListeners();
       await _voice.speak(reply);
       await _startFollowUpListening();
@@ -1635,7 +1603,7 @@ Beyond the limits of the mortal code,
 Mastering the boundless road.
 ''';
       } else {
-        content = 'Created by J.A.R.V.I.S. on ${DateTime.now().toIso8601String()}\nRequest: $trimmed\nStatus: Complete.';
+        content = 'Created by Friday on ${DateTime.now().toIso8601String()}\nRequest: $trimmed\nStatus: Complete.';
       }
 
       final res = await PhoneStorageService.instance.createFile(

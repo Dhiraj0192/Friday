@@ -297,7 +297,7 @@ class TaskExecutor extends ChangeNotifier {
       if (!await _automation.isServiceEnabled()) {
         _log(
           ChatMessage.error(
-            'Accessibility service is OFF. Enable "PrivateAgent Screen '
+            'Accessibility service is OFF. Enable "Friday Screen '
             'Control" in system settings, then retry.',
           ),
         );
@@ -633,7 +633,7 @@ class TaskExecutor extends ChangeNotifier {
       await VoiceService.instance.speak(summary);
     }
     await SystemControlService.instance.notify(
-      'PrivateAgent — ${status.name}',
+      'Friday — ${status.name}',
       '$goal\n$summary',
     );
 

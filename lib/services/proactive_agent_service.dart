@@ -13,6 +13,7 @@ import 'jarvis_tools_service.dart';
 import 'screen_automation_service.dart';
 import 'settings_service.dart';
 import 'todo_service.dart';
+import '../friday_identity.dart';
 
 class ProactiveSuggestion {
   final String id;
@@ -411,7 +412,7 @@ Output ONLY a JSON array of strings:
         : 'Describe the current screen and what action options are visible.';
 
     final prompt = '''
-You are Jarvis. You are inspecting the user's active Android smartphone screen.
+$fridayShortIdentity You are inspecting Sir's active Android screen.
 Current screen UI hierarchy dump:
 $dump
 

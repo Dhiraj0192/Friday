@@ -93,7 +93,7 @@ class LiquidGlassModeSwitcher extends StatelessWidget {
                       child: _modeItem(
                         context: context,
                         mode: AppMode.jarvis,
-                        label: 'JARVIS',
+                        label: 'FRIDAY',
                         icon: Icons.graphic_eq_rounded,
                         activeColor: const Color(0xFF00E5FF),
                         glowColor: const Color(0xFF00E5FF),

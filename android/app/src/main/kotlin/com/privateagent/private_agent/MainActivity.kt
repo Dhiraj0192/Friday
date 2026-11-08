@@ -825,7 +825,7 @@ class MainActivity : FlutterActivity() {
                         if (service == null) {
                             result.error(
                                 "SERVICE_OFF",
-                                "PrivateAgent accessibility service is not enabled",
+                                "Friday accessibility service is not enabled",
                                 null
                             )
                         } else {
@@ -841,7 +841,7 @@ class MainActivity : FlutterActivity() {
                         if (service == null) {
                             result.error(
                                 "SERVICE_OFF",
-                                "PrivateAgent accessibility service is not enabled",
+                                "Friday accessibility service is not enabled",
                                 null
                             )
                         } else {

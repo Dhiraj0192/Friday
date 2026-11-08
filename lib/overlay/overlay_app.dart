@@ -40,7 +40,7 @@ class _OverlayAppState extends State<OverlayApp>
 
   // JARVIS Real-Time Phase State
   String _jarvisPhase = 'idle'; // 'idle', 'listening', 'thinking', 'speaking', 'executing'
-  String _jarvisStatus = 'STANDBY // SAY "HEY JARVIS"';
+  String _jarvisStatus = 'STANDBY // SAY "HEY FRIDAY"';
   String? _screenSummary;
   String _summaryTitle = 'Screen Article Summary';
 
@@ -268,7 +268,7 @@ class _OverlayAppState extends State<OverlayApp>
           child: Row(
             children: [
               const Text(
-                'J.A.R.V.I.S.',
+                'FRIDAY',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 13,

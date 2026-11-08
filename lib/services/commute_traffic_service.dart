@@ -218,7 +218,7 @@ class CommuteTrafficService extends ChangeNotifier {
       );
       final res = await _client.get(
         uri,
-        headers: {'User-Agent': 'PrivateAgent-Jarvis/1.0'},
+        headers: {'User-Agent': 'Friday/1.0'},
       ).timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {

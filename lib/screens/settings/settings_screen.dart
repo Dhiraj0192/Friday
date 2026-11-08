@@ -187,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 _sectionHeader(
                   icon: Icons.shield_rounded,
-                  title: 'Autonomous J.A.R.V.I.S. Core',
+                  title: 'Autonomous Friday Core',
                   color: const Color(0xFF00E5FF),
                 ),
                 _jarvisCard(),
@@ -435,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Row(
                           children: [
                             const Text(
-                              'J.A.R.V.I.S.',
+                              'FRIDAY',
                               style: TextStyle(
                                 fontSize: 16.5,
                                 fontWeight: FontWeight.w900,

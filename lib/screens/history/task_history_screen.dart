@@ -145,7 +145,7 @@ class _TaskHistoryScreenState extends State<TaskHistoryScreen> {
                   text: 'Task: ${entry.goal}\n'
                       'Status: ${entry.status.name} • ${entry.steps} steps\n\n'
                       '${entry.logs.join('\n')}',
-                  subject: 'PrivateAgent task log',
+                  subject: 'Friday task log',
                 )),
                 icon: const Icon(Icons.share_outlined, size: 16),
                 label: const Text('Share log'),

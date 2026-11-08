@@ -65,7 +65,7 @@ class _PrivateAgentAppState extends State<PrivateAgentApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: PrivateAgentApp.navigatorKey,
-      title: 'PrivateAgent',
+      title: 'Friday',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

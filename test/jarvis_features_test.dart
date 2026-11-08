@@ -362,41 +362,44 @@ void main() {
       expect(JarvisService.extractWakeCommand('What are today to new headlines'), isNull);
     });
 
-    test('Accurately detects Jarvis wake phrases and extracts user commands', () {
-      // User says: "Hey Jarvis what are today to new headlines"
+    test('Detects Friday wake phrases and extracts user commands', () {
       expect(
-        JarvisService.extractWakeCommand('Hey Jarvis, what are today to new headlines'),
+        JarvisService.extractWakeCommand('Hey Friday, what are today to new headlines'),
         'what are today to new headlines',
       );
       expect(
-        JarvisService.extractWakeCommand('jarvis what are today to new headlines'),
+        JarvisService.extractWakeCommand('friday what are today to new headlines'),
         'what are today to new headlines',
       );
       expect(
-        JarvisService.extractWakeCommand('Hello Jarvis what are today to new headlines?'),
+        JarvisService.extractWakeCommand('what are today to new headlines, Friday?'),
         'what are today to new headlines',
       );
       expect(
-        JarvisService.extractWakeCommand('what are today to new headlines, Jarvis?'),
-        'what are today to new headlines',
+        JarvisService.extractWakeCommand("Friday, ask Jarvis what's on my calendar"),
+        "ask Jarvis what's on my calendar",
       );
     });
 
     test('Recognizes stand-alone wake greetings', () {
-      expect(JarvisService.extractWakeCommand('Hey Jarvis'), '');
-      expect(JarvisService.extractWakeCommand('Hey, Jarvis'), '');
-      expect(JarvisService.extractWakeCommand('Jarvis!'), '');
-      expect(JarvisService.extractWakeCommand('Hello Jarvis'), '');
-      expect(JarvisService.extractWakeCommand('Hello, Jarvis!'), '');
-      expect(JarvisService.extractWakeCommand('Ok Jarvis'), '');
-      expect(JarvisService.extractWakeCommand('Hi Jarvis'), '');
-      expect(JarvisService.extractWakeCommand('Hey Javis'), '');
-      expect(JarvisService.extractWakeCommand('Wake up Jarvis'), '');
-      expect(JarvisService.extractWakeCommand('Jarvis wake up'), '');
-      expect(JarvisService.extractWakeCommand('Hey service'), '');
-      expect(JarvisService.extractWakeCommand('Hey Travis'), '');
-      expect(JarvisService.extractWakeCommand('Hey Davis'), '');
-      expect(JarvisService.extractWakeCommand('Hey Davies'), '');
+      for (final phrase in [
+        'Hey Friday', 'Hey, Friday', 'Friday!', 'Hello Friday', 'Ok Friday',
+        'Hi Friday', 'Wake up Friday', 'Friday wake up', 'Hey Fryday',
+      ]) {
+        expect(JarvisService.extractWakeCommand(phrase), '', reason: phrase);
+      }
+    });
+
+    test('A weekday or the laptop agent\'s name does not wake Friday', () {
+      for (final phrase in [
+        'Remind me on Friday to call the bank',
+        "What's the weather on Friday",
+        'Send it by next Friday',
+        'Hey Jarvis',
+        'Jarvis what time is it',
+      ]) {
+        expect(JarvisService.extractWakeCommand(phrase), isNull, reason: phrase);
+      }
     });
   });
 
@@ -406,7 +409,7 @@ void main() {
       await hermes.resetAll();
 
       expect(hermes.soulMd, contains('SOUL.md'));
-      expect(hermes.soulMd, contains('J.A.R.V.I.S.'));
+      expect(hermes.soulMd, contains('Friday Core Identity'));
       expect(hermes.userMd, contains('USER.md'));
       expect(hermes.userMd, contains('Operator Profile'));
       expect(hermes.agentMd, contains('AGENT.md'));

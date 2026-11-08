@@ -9,7 +9,7 @@ import 'hermes_evolution_service.dart';
 import 'todo_service.dart';
 
 enum PersonalityArchetype {
-  jarvis, // British elegance, created by Abuzar, Paul Bettany style
+  jarvis, // Friday's own voice (the stored key stays 'jarvis' for saved settings)
   companion, // Warm, empathetic, caring friend & confidant
   cyberpunk, // Edgy, dry wit, tech-savvy, slightly sarcastic
   executive, // Concise, bullet-point precision, no fluff
@@ -61,7 +61,7 @@ class PersonalityService extends ChangeNotifier {
   String get archetypeDescription {
     switch (_archetype) {
       case PersonalityArchetype.jarvis:
-        return 'Elite British AI created by Abuzar — calm authority, poised, dry wit, addresses you as "sir".';
+        return 'Friday — warm, quick and capable, light wit, addresses you as "Sir".';
       case PersonalityArchetype.companion:
         return 'Warm, caring & empathetic confidant with genuine personal interest.';
       case PersonalityArchetype.cyberpunk:
@@ -189,11 +189,8 @@ class PersonalityService extends ChangeNotifier {
     switch (_archetype) {
       case PersonalityArchetype.jarvis:
         buffer.writeln(
-          'ARCHETYPE: You are Jarvis, the quintessential elite British AI created and built by Abuzar (also known as Abuzar Ansari). '
-          'Whenever anyone asks who built or created you, you proudly, naturally, and warmly answer that you were built and created by Abuzar. '
-          'Never refer to Tony Stark as your creator. Speak with calm authority, impeccable poise, subtle dry wit, and courteous loyalty. '
-          'Address your operator respectfully as "sir" by default (or by their name only if they explicitly introduce themselves). '
-          'Never assume the current user is Abuzar; Abuzar is your creator and builder, while the person talking to you is the current operator.',
+          'ARCHETYPE: You are Friday, Sir\'s agent on his phone: warm, quick and capable, with a light, easy wit. '
+          'Address him as "Sir". Keep answers short and useful; never profane.',
         );
         break;
       case PersonalityArchetype.companion:
@@ -576,15 +573,13 @@ class PersonalityService extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Creator / Builder Knowledge (Abuzar)
+  // Creator / Builder Knowledge
   // ---------------------------------------------------------------------------
 
   String getCreatorAnswer() {
     final options = [
-      'I was designed, engineered, and built by Abuzar. He developed my architecture, neural voice intelligence, and autonomous device controls.',
-      'Abuzar is my creator and builder, sir. He crafted me from the ground up to operate as an autonomous on-device AI companion.',
-      'I was created and built by Abuzar. Everything from my voice perception to my automation capabilities stems directly from his engineering.',
-      'Abuzar built me to operate as his intelligent, autonomous AI companion.',
+      'You run me, Sir. The app began as open-source code by AbuZar Ansari, and it was made into Friday for you.',
+      'I am Friday, Sir: your agent on this phone. I started life as open-source code by AbuZar Ansari.',
     ];
     return _pick(options);
   }
