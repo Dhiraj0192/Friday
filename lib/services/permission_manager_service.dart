@@ -122,10 +122,9 @@ class PermissionManagerService extends ChangeNotifier {
       AppPermissionInfo(
         type: AppPermissionType.batteryOptimization,
         title: 'Unrestricted Background Battery',
-        description: 'Prevents Android OS from sleeping or terminating continuous listening in desk mode.',
+        description: 'Keeps Friday running in the background, so she is ready when you or Jarvis need her.',
         icon: Icons.battery_charging_full_rounded,
         isGranted: batteryStatus,
-        isSystemSettingsOnly: true,
       ),
     ];
 
@@ -169,8 +168,7 @@ class PermissionManagerService extends ChangeNotifier {
         return false;
 
       case AppPermissionType.batteryOptimization:
-        await InboxService.instance.openBatteryOptimizationSettings();
-        return false;
+        return (await Permission.ignoreBatteryOptimizations.request()).isGranted;
     }
   }
 

@@ -244,6 +244,12 @@ class SettingsService extends ChangeNotifier {
   }
 
   /// Whether JARVIS listens continuously like Google Home without tapping.
+  /// Whether Friday already asked once to be spared battery optimisation.
+  bool get batteryExemptionAsked => _prefs?.getBool('battery_exemption_asked') ?? false;
+  Future<void> setBatteryExemptionAsked() async {
+    await _prefs?.setBool('battery_exemption_asked', true);
+  }
+
   bool get jarvisAlwaysOn => _prefs?.getBool('jarvis_always_on') ?? true;
   Future<void> setJarvisAlwaysOn(bool value) async {
     await _prefs?.setBool('jarvis_always_on', value);

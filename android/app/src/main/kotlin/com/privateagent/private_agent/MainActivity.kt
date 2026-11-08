@@ -32,6 +32,8 @@ import android.util.Base64
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.util.Calendar
@@ -90,6 +92,28 @@ class MainActivity : FlutterActivity() {
 
     // Charging & Power Telemetry Receiver
     private var powerReceiver: android.content.BroadcastReceiver? = null
+
+    companion object {
+        /** The engine outlives this activity; [FridayKeepAliveService] keeps the process. */
+        const val ENGINE_ID = "friday_main"
+        const val EXTRA_START_HIDDEN = "friday_start_hidden"
+    }
+
+    override fun provideFlutterEngine(context: Context): FlutterEngine =
+        FlutterEngineCache.getInstance().get(ENGINE_ID)
+            ?: FlutterEngine(context.applicationContext).also {
+                it.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
+                FlutterEngineCache.getInstance().put(ENGINE_ID, it)
+            }
+
+    override fun shouldDestroyEngineWithHost(): Boolean = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        FridayKeepAliveService.start(this)
+        // Started by the keep-alive service after a reboot: run, but stay out of Sir's way.
+        if (intent?.getBooleanExtra(EXTRA_START_HIDDEN, false) == true) moveTaskToBack(true)
+    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -743,10 +767,11 @@ class MainActivity : FlutterActivity() {
 
                     // Friday comes forward to ask Sir's yes, then hands the screen back
                     // to the app she was driving. The bound accessibility service exempts
-                    // this from Android's background activity-start limit.
+                    // this from Android's background activity-start limit. The application
+                    // context works even after Sir swiped this activity away.
                     "bringToFront" -> {
-                        startActivity(
-                            Intent(this, MainActivity::class.java).addFlags(
+                        applicationContext.startActivity(
+                            Intent(applicationContext, MainActivity::class.java).addFlags(
                                 Intent.FLAG_ACTIVITY_NEW_TASK or
                                     Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
                                     Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -828,14 +853,6 @@ class MainActivity : FlutterActivity() {
                             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                             Uri.parse("package:$packageName")
                         ).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        startActivity(intent)
-                        result.success(true)
-                    }
-
-                    "openBatteryOptimizationSettings" -> {
-                        val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
                         startActivity(intent)

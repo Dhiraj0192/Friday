@@ -15,9 +15,22 @@ class RiskApproval {
 
   static const timeout = Duration(seconds: 60);
 
+  /// True while a question is on screen, so nothing else talks over it.
+  static bool get isAsking => _asking > 0;
+  static int _asking = 0;
+
   static void install() => RiskGate.approver = ask;
 
   static Future<bool> ask(RiskRequest request) async {
+    _asking++;
+    try {
+      return await _ask(request);
+    } finally {
+      _asking--;
+    }
+  }
+
+  static Future<bool> _ask(RiskRequest request) async {
     final wasInFront =
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     final screen = ScreenAutomationService.instance;

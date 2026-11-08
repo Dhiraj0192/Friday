@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
+    <!-- Staying alive: restart after boot, and ask to be spared battery optimisation -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <!-- App listing / launching -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
@@ -88,6 +92,25 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <!-- Keeps Friday's process and engine alive in the background -->
+        <service
+            android:name=".FridayKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the Friday phone agent running so it can carry out the owner's requests and requests from his paired desktop assistant while the app is in the background." />
+        </service>
+
+        <receiver
+            android:name=".FridayBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- flutter_overlay_window foreground service for the floating bubble -->
         <service

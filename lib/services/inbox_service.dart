@@ -173,11 +173,4 @@ class InboxService {
       await _channel.invokeMethod<void>('openOverlaySettings');
     } catch (_) {}
   }
-
-  /// Opens battery optimization settings.
-  Future<void> openBatteryOptimizationSettings() async {
-    try {
-      await _channel.invokeMethod<void>('openBatteryOptimizationSettings');
-    } catch (_) {}
-  }
 }

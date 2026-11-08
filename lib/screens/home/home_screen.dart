@@ -2,12 +2,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../models/task_history_entry.dart';
 import '../../services/calendar_reminder_service.dart';
 import '../../services/jarvis_service.dart';
 import '../../services/notes_knowledge_service.dart';
 import '../../services/proactive_agent_service.dart';
+import '../../services/risk_approval.dart';
 import '../../services/screen_automation_service.dart' hide Size;
 import '../../services/settings_service.dart';
 import '../../services/task_executor.dart';
@@ -64,10 +66,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (_mode == AppMode.jarvis) {
       JarvisService.instance.onEnterJarvisMode();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        JarvisService.instance.speakGreeting();
-      });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onInFront());
     if (SettingsService.instance.jarvisAlwaysOn) {
       JarvisService.instance.ensureAlwaysOnRunning();
     }
@@ -100,7 +100,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refreshStates();
+    if (state == AppLifecycleState.resumed) {
+      _refreshStates();
+      _onInFront();
+    }
+  }
+
+  /// After a reboot Friday starts out of sight, so the greeting and the one-time
+  /// battery question wait until Sir actually opens her.
+  Future<void> _onInFront() async {
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) return;
+    if (RiskApproval.isAsking) return;
+    if (_mode == AppMode.jarvis) JarvisService.instance.speakGreeting();
+    final settings = SettingsService.instance;
+    if (!settings.batteryExemptionAsked) {
+      await settings.setBatteryExemptionAsked();
+      // Without it the phone's battery manager stops Friday in the background.
+      if (!await Permission.ignoreBatteryOptimizations.isGranted) {
+        await Permission.ignoreBatteryOptimizations.request();
+      }
+    }
   }
 
   Future<void> _refreshStates() async {
