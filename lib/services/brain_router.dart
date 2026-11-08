@@ -80,7 +80,7 @@ class BrainRouter {
     yield* withoutThinking(_generate(parts.$1, parts.$2, maxTokens.clamp(16, maxLocalTokens), temperature));
   }
 
-  /// Drops a leading <think>...</think> block (Qwen 3 thinks aloud first).
+  /// Drops a leading `<think>...</think>` block (Qwen 3 thinks aloud first).
   static Stream<String> withoutThinking(Stream<String> pieces) async* {
     var head = '';
     var passing = false;

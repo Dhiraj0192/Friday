@@ -131,6 +131,7 @@ class ModelStore extends ChangeNotifier {
     http.Client Function()? client,
     Future<Directory> Function()? directory,
     StorageProbe? storage,
+    this.catalogue = modelCatalogue,
   })  : _client = client ?? http.Client.new,
         _directory = directory ?? _defaultDirectory,
         _storage = storage ?? _defaultStorage;
@@ -148,12 +149,15 @@ class ModelStore extends ChangeNotifier {
   final Future<Directory> Function() _directory;
   final StorageProbe _storage;
 
+  /// The models this store can download and make active.
+  final List<ModelSpec> catalogue;
+
   /// Model id -> fraction downloaded, while a download runs.
   final progress = <String, double>{};
   final _cancelled = <String>{};
 
-  static ModelSpec? byId(String? id) {
-    for (final spec in modelCatalogue) {
+  ModelSpec? byId(String? id) {
+    for (final spec in catalogue) {
       if (spec.id == id) return spec;
     }
     return null;

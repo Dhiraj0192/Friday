@@ -68,6 +68,7 @@ void main() {
         client: () => hub.client,
         directory: () async => dir,
         storage: () async => (freeBytes: free, unmetered: wifi),
+        catalogue: [_spec()],
       );
 
   group('model store', () {

@@ -7,7 +7,7 @@ import 'dart:convert';
 /// {
 ///   "action": "click_text" | "click_at" | "type_text" | "press_enter" |
 ///             "scroll" | "swipe" | "press_back" | "press_home" |
-///             "open_app" | "wait" | "done",
+///             "open_app" | "wait" | "ask_jarvis" | "done",
 ///   "params": { ... },
 ///   "reasoning": "short explanation",
 ///   "is_complete": false
@@ -24,6 +24,7 @@ class TaskStep {
   static const actionPressHome = 'press_home';
   static const actionOpenApp = 'open_app';
   static const actionWait = 'wait';
+  static const actionAskJarvis = 'ask_jarvis';
   static const actionDone = 'done';
 
   static const supportedActions = <String>{
@@ -37,6 +38,7 @@ class TaskStep {
     actionPressHome,
     actionOpenApp,
     actionWait,
+    actionAskJarvis,
     actionDone,
   };
 

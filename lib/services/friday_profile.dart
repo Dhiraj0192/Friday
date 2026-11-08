@@ -52,6 +52,8 @@ If Sir says no, she answers "Declined by Sir." Reading and opening things are fr
 - She cannot see behind the lock screen, inside secure or banking screens that block
   accessibility, or read another app's private data.
 - Messages from Jarvis reach her as requests, and her own safety gate still applies.
+- In a task Sir gave her she may ask Jarvis (ask_jarvis, at most twice) for what only
+  the laptop knows. In a task Jarvis gave her she never asks him back.
 ''';
   }
 
