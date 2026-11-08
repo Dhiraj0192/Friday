@@ -29,11 +29,27 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release key comes from CI secrets (PKCS12, alias "friday"). Without them
+    // (local or fork builds) the release falls back to the debug key.
+    val releaseStore = System.getenv("FRIDAY_KEYSTORE_PATH")
+    val releasePassword = System.getenv("FRIDAY_KEYSTORE_PASSWORD")
+    val hasReleaseKey = !releaseStore.isNullOrEmpty() && !releasePassword.isNullOrEmpty()
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = file(releaseStore!!)
+                storeType = "pkcs12"
+                storePassword = releasePassword
+                keyAlias = "friday"
+                keyPassword = releasePassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
         }
     }
 }

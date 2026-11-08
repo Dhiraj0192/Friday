@@ -1,0 +1,83 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+# The Flutter version the project was created with (.metadata revision 6b182d2).
+env:
+  FLUTTER_VERSION: '3.44.9'
+
+jobs:
+  check:
+    name: analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  apk:
+    name: release apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # attach the APK to a release on v* tags
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Release key
+        env:
+          KEYSTORE_B64: ${{ secrets.FRIDAY_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.FRIDAY_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/friday.p12"
+            echo "FRIDAY_KEYSTORE_PATH=$RUNNER_TEMP/friday.p12" >> "$GITHUB_ENV"
+            echo "FRIDAY_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No release key in secrets; the APK is signed with the debug key."
+          fi
+      - run: flutter pub get
+      - run: flutter build apk --release --split-per-abi --target-platform android-arm64
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: friday-apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          if-no-files-found: error
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "friday-${GITHUB_REF_NAME}.apk"
+          gh release create "$GITHUB_REF_NAME" "friday-${GITHUB_REF_NAME}.apk" \
+            --repo "$GITHUB_REPOSITORY" --title "Friday $GITHUB_REF_NAME" --generate-notes
